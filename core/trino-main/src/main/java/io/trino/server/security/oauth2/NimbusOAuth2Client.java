@@ -20,6 +20,7 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.jwk.source.JWKSourceBuilder;
 import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jose.proc.DefaultJOSEObjectTypeVerifier;
@@ -81,6 +82,7 @@ import static com.nimbusds.oauth2.sdk.ResponseType.CODE;
 import static com.nimbusds.openid.connect.sdk.OIDCScopeValue.OPENID;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class NimbusOAuth2Client
@@ -106,6 +108,10 @@ public class NimbusOAuth2Client
     private JWSKeySelector<SecurityContext> jwsKeySelector;
     private JWTProcessor<SecurityContext> accessTokenProcessor;
     private AuthorizationCodeFlow flow;
+    private final Optional<Duration> jwtratelimit;
+    private final Optional<Duration> jwtTimeToLive;
+    private final Optional<Duration> jwtcacherefreshtimeout;
+    private final Optional<Duration> jwkRefreshAheadCache;
 
     @Inject
     public NimbusOAuth2Client(OAuth2Config oauthConfig, OAuth2ServerConfigProvider serverConfigurationProvider, NimbusHttpClient httpClient)
@@ -117,10 +123,18 @@ public class NimbusOAuth2Client
         principalField = oauthConfig.getPrincipalField();
         maxClockSkew = oauthConfig.getMaxClockSkew();
         jwtType = oauthConfig.getJwtType();
+        jwtTimeToLive = oauthConfig.getjwkSetTimeToLive();
+        jwtcacherefreshtimeout = oauthConfig.getJWKCashRefreshTimeout();
+        jwtratelimit = oauthConfig.getJWKRequestRateLimit();
+        jwkRefreshAheadCache = oauthConfig.getjwkRefreshAheadCache();
 
         accessTokenAudiences = new HashSet<>(oauthConfig.getAdditionalAudiences());
         accessTokenAudiences.add(clientId.getValue());
-        accessTokenAudiences.add(null); // A null value in the set allows JWTs with no audience
+        /*********** Bloomberg customization ****************/
+        if (oauthConfig.getAdditionalAudiences().isEmpty() || accessTokenAudiences.contains("*")) {
+            accessTokenAudiences.add(null); // A null value in the set allows JWTs with no audience
+        }
+        /*********** end Bloomberg customization ****************/
 
         this.serverConfigurationProvider = requireNonNull(serverConfigurationProvider, "serverConfigurationProvider is null");
         this.httpClient = requireNonNull(httpClient, "httpClient is null");
@@ -134,14 +148,44 @@ public class NimbusOAuth2Client
         this.tokenUrl = config.tokenUrl();
         this.userinfoUrl = config.userinfoUrl();
         this.endSessionUrl = config.endSessionUrl();
-        try {
-            jwsKeySelector = new JWSVerificationKeySelector<>(
-                    Stream.concat(JWSAlgorithm.Family.RSA.stream(), JWSAlgorithm.Family.EC.stream()).collect(toImmutableSet()),
-                    JWKSourceBuilder.create(config.jwksUrl().toURL(), httpClient).build());
-        }
-        catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
+
+        /*********** Bloomberg customization ****************/
+        jwsKeySelector = new JWSVerificationKeySelector<>(
+                Stream.concat(JWSAlgorithm.Family.RSA.stream(), JWSAlgorithm.Family.EC.stream()).collect(toImmutableSet()),
+                new NimbusMultiJWKSource<>(config.jwksUrls().stream().map(jwkUrl -> {
+                    try {
+                        JWKSourceBuilder builder = JWKSourceBuilder.create(jwkUrl.toURL(), httpClient);
+
+                        if (jwtTimeToLive.isPresent()) {
+                            builder = builder.cache(
+                                (long) jwtTimeToLive.get().roundTo(MILLISECONDS),
+                                (long) (jwtcacherefreshtimeout.isPresent() ? jwtcacherefreshtimeout.get().roundTo(MILLISECONDS) : jwtTimeToLive.get().roundTo(MILLISECONDS) / 2));
+                        }
+                        else {
+                            builder = builder.cache(false);
+                        }
+
+                        if (jwtratelimit.isPresent()) {
+                            builder = builder.rateLimited((long) jwtratelimit.get().roundTo(MILLISECONDS));
+                        }
+                        else {
+                            builder = builder.rateLimited(false).refreshAheadCache(false);
+                        }
+
+                        if (jwkRefreshAheadCache.isPresent()) {
+                            builder = builder.refreshAheadCache((long) jwkRefreshAheadCache.get().roundTo(MILLISECONDS), true);
+                        }
+                        else {
+                            builder = builder.refreshAheadCache(false);
+                        }
+
+                        return (JWKSource<SecurityContext>) builder.build();
+                    }
+                    catch (MalformedURLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).toList()));
+        /*********** end Bloomberg customization ****************/
 
         DefaultJWTProcessor<SecurityContext> processor = new DefaultJWTProcessor<>();
         if (jwtType.isPresent()) {

@@ -1174,7 +1174,9 @@ public class TestResourceSecurity
                     user -> ImmutableSet.of(),
                     accessControl,
                     new ProtocolConfig(),
-                    QueryDataEncoder.EncoderSelector.noEncoder());
+                    QueryDataEncoder.EncoderSelector.noEncoder(),
+                    /*********** Bloomberg customization ***********/
+                    (_, _) -> ImmutableMap.of());
         }
 
         @ResourceSecurity(AUTHENTICATED_USER)

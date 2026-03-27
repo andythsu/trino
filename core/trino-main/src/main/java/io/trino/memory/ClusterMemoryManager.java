@@ -498,6 +498,18 @@ public class ClusterMemoryManager
         return memoryInfo;
     }
 
+    public synchronized Map<String, Optional<MemoryInfo>> getCoordinatorsMemoryInfo()
+    {
+        Map<String, Optional<MemoryInfo>> memoryInfo = new HashMap<>();
+        for (Entry<String, RemoteNodeMemory> entry : nodes.entrySet()) {
+            if (entry.getValue().getNode().isCoordinator()) {
+                String workerId = entry.getKey();
+                memoryInfo.put(workerId, entry.getValue().getInfo());
+            }
+        }
+        return memoryInfo;
+    }
+
     public synchronized Map<String, Optional<MemoryInfo>> getAllNodesMemoryInfo()
     {
         Map<String, Optional<MemoryInfo>> memoryInfo = new HashMap<>();

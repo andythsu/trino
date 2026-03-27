@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<schema bdem:responseType='Response' bdem:requestType='Request' xmlns='http://www.w3.org/2001/XMLSchema'
+        xmlns:bdem='http://bloomberg.com/schemas/bdem'
+        xmlns:tns='urn:x-bloomberg-com:BAS.services.mocksvc'
+        targetNamespace='urn:x-bloomberg-com:BAS.services.mocksvc'
+        elementFormDefault='qualified'
+        bdem:requestElement='request'
+        bdem:responseElement='response'
+        bdem:serviceInfo='mocksvc:99999-1.0'>
+
+    <element name='request'  type='tns:Request' />
+    <element name='response' type='tns:Response' />
+
+    <complexType name="LimitResponse">
+        <sequence>
+            <element name="data" type="int" maxOccurs="unbounded"/>
+        </sequence>
+    </complexType>
+
+    <complexType name="LimitRequest">
+        <sequence>
+            <element name="limit" type="int" maxOccurs="0"/>
+        </sequence>
+    </complexType>
+
+    <complexType name='Request'>
+        <choice>
+            <element name="dateRequest" type="date"/>
+            <element name="limitRequest" type="tns:LimitRequest"/>
+        </choice>
+    </complexType>
+
+    <complexType name='Response'>
+        <choice>
+            <element name="dateResponse" type="date"/>
+            <element name="limitResponse" type="tns:LimitResponse"/>
+        </choice>
+    </complexType>
+</schema>

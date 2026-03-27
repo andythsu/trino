@@ -67,6 +67,7 @@ import io.trino.testing.TestingAccessControlManager;
 import io.trino.testing.TestingAccessControlManager.TestingPrivilege;
 import io.trino.testing.TestingGroupProvider;
 import io.trino.testing.TestingSession;
+import io.trino.testing.TestingUserAttributeProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 
@@ -135,6 +136,7 @@ public class TestAccessControl
     private static final String REDIRECTED_TARGET = "redirected_target";
     private final AtomicReference<SystemAccessControl> systemAccessControl = new AtomicReference<>(new DefaultSystemAccessControl());
     private final TestingGroupProvider groupProvider = new TestingGroupProvider();
+    private final TestingUserAttributeProvider userAttributeProvider = new TestingUserAttributeProvider();
     private TestingSystemSecurityMetadata systemSecurityMetadata;
 
     @Override
@@ -165,6 +167,7 @@ public class TestAccessControl
                 })
                 .build();
         queryRunner.getGroupProvider().setConfiguredGroupProvider(groupProvider);
+        queryRunner.getUserAttributeProvider().setConfiguredUserAttributeProvider(userAttributeProvider);
         queryRunner.installPlugin(new BlackHolePlugin());
         queryRunner.createCatalog("blackhole", "blackhole");
         queryRunner.installPlugin(new MemoryPlugin());
@@ -302,6 +305,7 @@ public class TestAccessControl
                 .reset();
         getQueryRunner().getAccessControl().reset();
         groupProvider.reset();
+        userAttributeProvider.reset();
     }
 
     @Test
@@ -469,6 +473,15 @@ public class TestAccessControl
 
         // verify view can be queried when owner is in group
         groupProvider.setUserGroups(ImmutableMap.of(viewOwnerSession.getUser(), ImmutableSet.of("testgroup")));
+        getQueryRunner().execute(getSession(), "SELECT * FROM " + columnAccessViewName);
+
+        // verify that user attributes are inside access control
+        getQueryRunner().getAccessControl().denyIdentityTable((identity, table) -> identity.getUserAttributes().getOrDefault("test-attribute", "").equals("test-attribute-value") || !"orders".equals(table));
+        assertThatThrownBy(() -> getQueryRunner().execute(getSession(), "SELECT * FROM " + columnAccessViewName))
+                .hasMessageMatching("Access Denied: View owner does not have sufficient privileges: View owner 'test_view_access_owner' cannot create view that selects from \\w+.\\w+.orders");
+
+        // verify view can be queried when owner has attributes
+        userAttributeProvider.setUserAttributes(viewOwnerSession.getUser(), viewOwnerSession.getIdentity().getPrincipal(), ImmutableMap.of("test-attribute", "test-attribute-value"));
         getQueryRunner().execute(getSession(), "SELECT * FROM " + columnAccessViewName);
 
         // change access denied exception to view

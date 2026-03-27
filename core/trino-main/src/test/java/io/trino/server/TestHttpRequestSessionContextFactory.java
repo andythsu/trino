@@ -206,6 +206,7 @@ public class TestHttpRequestSessionContextFactory
                 new AllowAllAccessControl(),
                 new ProtocolConfig()
                         .setAlternateHeaderName(headers.getProtocolName()),
-                QueryDataEncoder.EncoderSelector.noEncoder());
+                QueryDataEncoder.EncoderSelector.noEncoder(),
+                (_, _) -> ImmutableMap.of());
     }
 }

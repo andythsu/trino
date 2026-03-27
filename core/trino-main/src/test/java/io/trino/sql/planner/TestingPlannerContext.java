@@ -142,7 +142,9 @@ public final class TestingPlannerContext
                     typeManager,
                     _ -> ImmutableSet.of(),
                     blockEncodingSerde,
-                    new LanguageFunctionEngineManager());
+                    new LanguageFunctionEngineManager(),
+                    /*********** Bloomberg customization ***********/
+                    (_, _) -> ImmutableMap.of());
 
             Metadata metadata = this.metadata;
             if (metadata == null) {

@@ -45,10 +45,6 @@ public class TestingDbSpecsProvider
     {
         requireNonNull(dao, "dao is null");
         this.dao = dao;
-
-        dao.createSessionSpecsTable();
-        dao.createSessionClientTagsTable();
-        dao.createSessionPropertiesTable();
     }
 
     @PreDestroy

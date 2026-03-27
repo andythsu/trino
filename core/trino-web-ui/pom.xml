@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.trino</groupId>
         <artifactId>trino-root</artifactId>
-        <version>480</version>
+        <version>480.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -16,6 +16,9 @@
     <properties>
         <frontend.package.goal>package</frontend.package.goal>
         <frontend.check.goal>check</frontend.check.goal>
+        <!-- bloomberg customization starts -->
+        <frontend.npmRegistryURL>https://artprod.dev.bloomberg.com/artifactory/api/npm/npm-repos/</frontend.npmRegistryURL>
+        <!-- bloomberg customization ends -->
     </properties>
 
     <dependencies>
@@ -81,6 +84,9 @@
                 <artifactId>frontend-maven-plugin</artifactId>
                 <configuration>
                     <installDirectory>${node.tmpdir}</installDirectory>
+                    <!-- bloomberg customization starts -->
+                    <npmRegistryURL>${frontend.npmRegistryURL}</npmRegistryURL>
+                    <!-- bloomberg customization ends -->
                 </configuration>
                 <executions>
                     <execution>
@@ -91,6 +97,12 @@
                         <phase>generate-resources</phase>
                         <configuration>
                             <workingDirectory>src/main/resources/webapp/src</workingDirectory>
+                            <!-- bloomberg customization starts -->
+                            <nodeVersion>v22.22.2</nodeVersion>
+                            <npmVersion>11.7.0</npmVersion>
+                            <nodeDownloadRoot>https://artprod.dev.bloomberg.com/artifactory/nodejs/</nodeDownloadRoot>
+                            <npmDownloadRoot>https://artprod.dev.bloomberg.com/artifactory/npm-repos/npm/-/</npmDownloadRoot>
+                            <!-- bloomberg customization ends -->
                         </configuration>
                     </execution>
                     <execution>
@@ -141,19 +153,4 @@
             </plugin>
         </plugins>
     </build>
-    <profiles>
-        <profile>
-            <id>ci</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-                <property>
-                    <name>env.CI</name>
-                </property>
-            </activation>
-            <properties>
-                <frontend.package.goal>package:clean</frontend.package.goal>
-                <frontend.check.goal>check:clean</frontend.check.goal>
-            </properties>
-        </profile>
-    </profiles>
 </project>

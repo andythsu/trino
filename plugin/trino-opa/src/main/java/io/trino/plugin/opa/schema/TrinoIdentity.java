@@ -13,27 +13,32 @@
  */
 package io.trino.plugin.opa.schema;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.trino.spi.security.Identity;
 
+import java.util.Map;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
 public record TrinoIdentity(
         String user,
-        Set<String> groups)
+        Set<String> groups,
+        Map<String, Object> userAttributes)
 {
     public static TrinoIdentity fromTrinoIdentity(Identity identity)
     {
         return new TrinoIdentity(
                 identity.getUser(),
-                identity.getGroups());
+                identity.getGroups(),
+                identity.getUserAttributes());
     }
 
     public TrinoIdentity
     {
         requireNonNull(user, "user is null");
         groups = ImmutableSet.copyOf(requireNonNull(groups, "groups is null"));
+        userAttributes = ImmutableMap.copyOf(requireNonNull(userAttributes, "userAttributes is null"));
     }
 }

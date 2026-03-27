@@ -51,6 +51,8 @@ public final class SessionRepresentation
     private final Set<String> originalRoles;
     private final Set<String> groups;
     private final Set<String> originalUserGroups;
+    private final Map<String, Object> userAttributes;
+    private final Map<String, Object> originalUserAttributes;
     private final Optional<String> principal;
     private final Set<String> enabledRoles;
     private final Optional<String> source;
@@ -85,6 +87,8 @@ public final class SessionRepresentation
             @JsonProperty("setOriginalRoles") Set<String> originalRoles,
             @JsonProperty("groups") Set<String> groups,
             @JsonProperty("originalUserGroups") Set<String> originalUserGroups,
+            @JsonProperty("userAttributes") Map<String, Object> userAttributes,
+            @JsonProperty("originalUserAttributes") Map<String, Object> originalUserAttributes,
             @JsonProperty("principal") Optional<String> principal,
             @JsonProperty("enabledRoles") Set<String> enabledRoles,
             @JsonProperty("source") Optional<String> source,
@@ -117,6 +121,8 @@ public final class SessionRepresentation
         this.originalRoles = requireNonNull(originalRoles, "setOriginalRoles is null");
         this.groups = requireNonNull(groups, "groups is null");
         this.originalUserGroups = requireNonNull(originalUserGroups, "originalUserGroups is null");
+        this.userAttributes = requireNonNull(userAttributes, "userAttributes is null");
+        this.originalUserAttributes = requireNonNull(originalUserAttributes, "originalUserAttributes is null");
         this.principal = requireNonNull(principal, "principal is null");
         this.enabledRoles = ImmutableSet.copyOf(requireNonNull(enabledRoles, "enabledRoles is null"));
         this.source = requireNonNull(source, "source is null");
@@ -198,6 +204,18 @@ public final class SessionRepresentation
     public Set<String> getOriginalUserGroups()
     {
         return originalUserGroups;
+    }
+
+    @JsonProperty
+    public Map<String, Object> getUserAttributes()
+    {
+        return userAttributes;
+    }
+
+    @JsonProperty
+    public Map<String, Object> getOriginalUserAttributes()
+    {
+        return originalUserAttributes;
     }
 
     @JsonProperty

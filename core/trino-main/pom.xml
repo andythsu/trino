@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.trino</groupId>
         <artifactId>trino-root</artifactId>
-        <version>480</version>
+        <version>480.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -565,6 +565,9 @@
                         <compilerArgs combine.self="merge">
                             <arg>${extraJavaVectorArgs}</arg>
                         </compilerArgs>
+                        <!-- Bloomberg customization -->
+                        <source>9</source>
+                        <target>9</target>
                     </configuration>
                 </plugin>
                 <plugin>

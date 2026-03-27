@@ -14,6 +14,7 @@
 package io.trino.server.security.oauth2;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
@@ -22,14 +23,14 @@ public interface OAuth2ServerConfigProvider
 {
     OAuth2ServerConfig get();
 
-    record OAuth2ServerConfig(Optional<String> accessTokenIssuer, URI authUrl, URI tokenUrl, URI jwksUrl, Optional<URI> userinfoUrl, Optional<URI> endSessionUrl)
+    record OAuth2ServerConfig(Optional<String> accessTokenIssuer, URI authUrl, URI tokenUrl, List<URI> jwksUrls, Optional<URI> userinfoUrl, Optional<URI> endSessionUrl)
     {
         public OAuth2ServerConfig
         {
             requireNonNull(accessTokenIssuer, "accessTokenIssuer is null");
             requireNonNull(authUrl, "authUrl is null");
             requireNonNull(tokenUrl, "tokenUrl is null");
-            requireNonNull(jwksUrl, "jwksUrl is null");
+            requireNonNull(jwksUrls, "jwksUrls is null");
             requireNonNull(userinfoUrl, "userinfoUrl is null");
             requireNonNull(endSessionUrl, "endSessionUrl is null");
         }

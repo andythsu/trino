@@ -14,6 +14,8 @@
 package io.trino.plugin.opa;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.ConfigurationException;
+import io.airlift.configuration.ConfigurationFactory;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
@@ -23,6 +25,7 @@ import java.util.Map;
 import static io.airlift.configuration.testing.ConfigAssertions.assertFullMapping;
 import static io.airlift.configuration.testing.ConfigAssertions.assertRecordedDefaults;
 import static io.airlift.configuration.testing.ConfigAssertions.recordDefaults;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 final class TestOpaConfig
 {
@@ -38,7 +41,9 @@ final class TestOpaConfig
                 .setLogRequests(false)
                 .setLogResponses(false)
                 .setAllowPermissionManagementOperations(false)
-                .setAdditionalContextFile(null));
+                .setAdditionalContextFile(null)
+                /*********** Bloomberg customization ***********/
+                .setOpaBatchSize(null));
     }
 
     @Test
@@ -54,6 +59,8 @@ final class TestOpaConfig
                 .put("opa.log-responses", "true")
                 .put("opa.allow-permission-management-operations", "true")
                 .put("opa.context-file", "src/test/resources/additional-context.properties")
+                /*********** Bloomberg customization ***********/
+                .put("opa.policy.batch-size", "100")
                 .buildOrThrow();
 
         OpaConfig expected = new OpaConfig()
@@ -65,8 +72,26 @@ final class TestOpaConfig
                 .setLogRequests(true)
                 .setLogResponses(true)
                 .setAllowPermissionManagementOperations(true)
-                .setAdditionalContextFile(Path.of("src/test/resources/additional-context.properties"));
+                .setAdditionalContextFile(Path.of("src/test/resources/additional-context.properties"))
+                /*********** Bloomberg customization ***********/
+                .setOpaBatchSize(100);
 
         assertFullMapping(properties, expected);
+    }
+
+    @Test
+    public void testInvalidOpaBatchSizeThrows()
+    {
+        assertThatThrownBy(() -> new ConfigurationFactory(ImmutableMap.<String, String>builder()
+                .put("opa.policy.uri", "https://opa.example.com")
+                .put("opa.policy.batch-size", "0")
+                .buildOrThrow()).build(OpaConfig.class))
+                .isInstanceOf(ConfigurationException.class);
+
+        assertThatThrownBy(() -> new ConfigurationFactory(ImmutableMap.<String, String>builder()
+                .put("opa.policy.uri", "https://opa.example.com")
+                .put("opa.policy.batch-size", "-20")
+                .buildOrThrow()).build(OpaConfig.class))
+                .isInstanceOf(ConfigurationException.class);
     }
 }

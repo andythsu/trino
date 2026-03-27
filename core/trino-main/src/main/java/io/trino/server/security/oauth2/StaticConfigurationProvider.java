@@ -27,7 +27,8 @@ public class StaticConfigurationProvider
                 config.getAccessTokenIssuer(),
                 config.getAuthUrl(),
                 config.getTokenUrl(),
-                config.getJwksUrl(),
+                /*********** Bloomberg customization: multi-JWKS support ***********/
+                config.getJwksUrls(),
                 config.getUserinfoUrl(),
                 config.getEndSessionUrl());
     }

@@ -73,6 +73,8 @@ public interface QueryRunner
 
     TestingGroupProviderManager getGroupProvider();
 
+    TestingUserAttributeProviderManager getUserAttributeProvider();
+
     TestingAccessControlManager getAccessControl();
 
     List<SpanData> getSpans();

@@ -50,6 +50,11 @@ public class OAuth2Config
     private boolean enableRefreshTokens;
     private boolean enableDiscovery = true;
 
+    private Optional<Duration> jwkRequestRateLimit = Optional.empty();
+    private Optional<Duration> jwkSetTimeToLive = Optional.empty();
+    private Optional<Duration> jwkCacheRefreshTimeout = Optional.empty();
+    private Optional<Duration> jwkRefreshAheadCache = Optional.empty();
+
     public Optional<String> getStateKey()
     {
         return stateKey;
@@ -241,6 +246,58 @@ public class OAuth2Config
     public OAuth2Config setEnableDiscovery(boolean enableDiscovery)
     {
         this.enableDiscovery = enableDiscovery;
+        return this;
+    }
+
+    public Optional<Duration> getJWKRequestRateLimit()
+    {
+        return this.jwkRequestRateLimit;
+    }
+
+    @Config("http-server.authentication.oauth2.jwk-request-rate-limit")
+    @ConfigDescription("Sets the minimum amount of time allowed between JWT requests")
+    public OAuth2Config setJWKRequestRateLimit(Duration refreshtimeout)
+    {
+        this.jwkRequestRateLimit = Optional.ofNullable(refreshtimeout);
+        return this;
+    }
+
+    public Optional<Duration> getjwkSetTimeToLive()
+    {
+        return this.jwkSetTimeToLive;
+    }
+
+    @Config("http-server.authentication.oauth2.jwkset-time-to-live")
+    @ConfigDescription("Enables maximum time for JWKSET time to live")
+    public OAuth2Config setjwkSetTimeToLive(Duration timetolive)
+    {
+        this.jwkSetTimeToLive = Optional.ofNullable(timetolive);
+        return this;
+    }
+
+    public Optional<Duration> getJWKCashRefreshTimeout()
+    {
+        return this.jwkCacheRefreshTimeout;
+    }
+
+    @Config("http-server.authentication.oauth2.jwkset-cache-refresh-timeout")
+    @ConfigDescription("Sets the JWK cache refresh timeout. If not set it will default to 1/2 of jwkSetTimeToLive")
+    public OAuth2Config setJWKCashRefreshTimeout(Duration refreshtimeout)
+    {
+        this.jwkCacheRefreshTimeout = Optional.ofNullable(refreshtimeout);
+        return this;
+    }
+
+    public Optional<Duration> getjwkRefreshAheadCache()
+    {
+        return this.jwkRefreshAheadCache;
+    }
+
+    @Config("http-server.authentication.oauth2.jwk-refresh-ahead-of-cache-time")
+    @ConfigDescription("Sets the JWK refesh ahead of cache time")
+    public OAuth2Config setjwkRefreshAheadCache(Duration refreshaheadtime)
+    {
+        this.jwkRefreshAheadCache = Optional.ofNullable(refreshaheadtime);
         return this;
     }
 }

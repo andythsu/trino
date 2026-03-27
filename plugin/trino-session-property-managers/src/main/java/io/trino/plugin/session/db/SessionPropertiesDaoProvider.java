@@ -15,13 +15,8 @@ package io.trino.plugin.session.db;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.mysql.cj.jdbc.MysqlDataSource;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.sqlobject.SqlObjectPlugin;
-
-import java.util.Optional;
-
-import static java.util.Objects.requireNonNull;
 
 public class SessionPropertiesDaoProvider
         implements Provider<SessionPropertiesDao>
@@ -29,22 +24,15 @@ public class SessionPropertiesDaoProvider
     private final SessionPropertiesDao dao;
 
     @Inject
-    public SessionPropertiesDaoProvider(DbSessionPropertyManagerConfig config)
+    public SessionPropertiesDaoProvider(DbSessionPropertyManagerConfig config, Jdbi jdbi)
     {
-        String url = requireNonNull(config.getConfigDbUrl(), "db url is null");
-
-        MysqlDataSource dataSource = new MysqlDataSource();
-        dataSource.setURL(url);
-
-        Optional<String> username = Optional.ofNullable(config.getUsername());
-        username.ifPresent(dataSource::setUser);
-
-        Optional<String> password = Optional.ofNullable(config.getPassword());
-        password.ifPresent(dataSource::setPassword);
-
-        this.dao = Jdbi.create(dataSource)
+        Class<? extends SessionPropertiesDao> daoClazz = SessionPropertiesDao.class;
+        if (config.getConfigDbUrl().startsWith("jdbc:postgresql")) {
+            daoClazz = PostgresSessionPropertiesDao.class;
+        }
+        this.dao = jdbi
                 .installPlugin(new SqlObjectPlugin())
-                .onDemand(SessionPropertiesDao.class);
+                .onDemand(daoClazz);
     }
 
     @Override

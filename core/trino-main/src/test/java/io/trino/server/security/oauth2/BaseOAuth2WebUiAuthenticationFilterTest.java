@@ -22,6 +22,7 @@ import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.log.Level;
 import io.airlift.log.Logging;
+import io.airlift.units.Duration;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.impl.DefaultClaims;
@@ -52,12 +53,12 @@ import java.net.URI;
 import java.net.URL;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static io.airlift.testing.Closeables.closeAll;
 import static io.trino.client.OkHttpUtil.setupInsecureSsl;
@@ -79,7 +80,7 @@ import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 @Execution(CONCURRENT)
 public abstract class BaseOAuth2WebUiAuthenticationFilterTest
 {
-    protected static final Duration TTL_ACCESS_TOKEN_IN_SECONDS = Duration.ofSeconds(5);
+    protected static final java.time.Duration TTL_ACCESS_TOKEN_IN_SECONDS = java.time.Duration.ofSeconds(5);
 
     protected static final String TRINO_CLIENT_ID = "trino-client";
     protected static final String TRINO_CLIENT_SECRET = "trino-secret";
@@ -370,16 +371,14 @@ public abstract class BaseOAuth2WebUiAuthenticationFilterTest
 
     protected Jws<Claims> parseJwsClaims(String claimsJws)
     {
-        HttpClientConfig httpClientConfig = new HttpClientConfig()
-                .setTrustStorePath(Resources.getResource("cert/localhost.pem").getPath());
-        try (JettyHttpClient httpClient = new JettyHttpClient(httpClientConfig)) {
-            return newJwtParserBuilder()
-                    .keyLocator(new JwkSigningKeyLocator(new JwkService(
-                            URI.create("https://localhost:" + hydraIdP.getAuthPort() + "/.well-known/jwks.json"),
-                            httpClient)))
-                    .build()
-                    .parseSignedClaims(claimsJws);
-        }
+        return newJwtParserBuilder()
+                .keyLocator(new JwkSigningKeyLocator(new JwkService(
+                        URI.create("https://localhost:" + hydraIdP.getAuthPort() + "/.well-known/jwks.json"),
+                        new JettyHttpClient(new HttpClientConfig()
+                                .setTrustStorePath(Resources.getResource("cert/localhost.pem").getPath())),
+                                new Duration(15, TimeUnit.SECONDS))))
+                .build()
+                .parseSignedClaims(claimsJws);
     }
 
     private void assertUICallWithCookie(String cookieValue)

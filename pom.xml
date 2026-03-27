@@ -10,7 +10,7 @@
 
     <groupId>io.trino</groupId>
     <artifactId>trino-root</artifactId>
-    <version>480</version>
+    <version>480.0</version>
     <packaging>pom</packaging>
 
     <name>${project.artifactId}</name>
@@ -28,6 +28,7 @@
     </licenses>
 
     <modules>
+        <module>bloomberg</module>
         <module>client/trino-cli</module>
         <module>client/trino-client</module>
         <module>client/trino-jdbc</module>
@@ -122,6 +123,7 @@
         <module>plugin/trino-tpch</module>
         <module>service/trino-proxy</module>
         <module>service/trino-verifier</module>
+        <module>testing/datalake-testcontainers-image-substitutor</module>
         <module>testing/trino-benchmark-queries</module>
         <module>testing/trino-benchto-benchmarks</module>
         <module>testing/trino-faulttolerant-tests</module>
@@ -212,6 +214,10 @@
         <dep.tcnative.version>2.0.75.Final</dep.tcnative.version>
         <dep.tempto.version>202</dep.tempto.version>
         <dep.zookeeper.version>3.9.5</dep.zookeeper.version>
+        <!-- Bloomberg customization: Bloomberg-specific dependency versions -->
+        <dep.auth0.version>4.5.0</dep.auth0.version>
+        <dep.comdb2.cdb2jdbc.version>3.1.8</dep.comdb2.cdb2jdbc.version>
+        <dep.flyway.version>11.7.2</dep.flyway.version>
         <extraJavaVectorArgs>--add-modules=jdk.incubator.vector</extraJavaVectorArgs>
         <!--
         Instructs Provisio to write runtime dependencies in the format groupId_artifactId-version.jar.
@@ -383,6 +389,12 @@
                         <artifactId>azure-core</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>com.bloomberg.datalake.trino</groupId>
+                <artifactId>datalake-testcontainers-image-substitutor</artifactId>
+                <version>${project.version}</version>
             </dependency>
 
             <dependency>
@@ -1107,6 +1119,12 @@
             <dependency>
                 <groupId>io.trino</groupId>
                 <artifactId>trino-grammar</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.trino</groupId>
+                <artifactId>trino-hadoop-toolkit</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -2497,7 +2515,7 @@
                         <rules>
                             <bannedDependencies>
                                 <excludes combine.children="append">
-                                    <!-- We don't use log4j2, additionally versions < 2.15.0 are vulnerable to the RCE Log4Shell (CVE-2021-44228) -->
+                                    <!-- We don't use log4j2, additionally versions < 2.15.0 are vulnerable to the RCE Log4Shell (CVE-2021-4422.28) -->
                                     <exclude>org.apache.logging.log4j:log4j-core</exclude>
                                     <!-- 1.x versions are banned due to https://www.cve.org/CVERecord?id=CVE-2022-1471 -->
                                     <exclude>org.yaml:snakeyaml</exclude>
@@ -2577,7 +2595,17 @@
                                 <groupId>com.clickhouse</groupId>
                                 <artifactId>clickhouse-jdbc</artifactId>
                             </ignoredDependency>
+                            <!-- bloomberg customizations -->
+                            <dependency>
+                                <groupId>com.google.protobuf</groupId>
+                                <artifactId>protobuf-java</artifactId>
+                            </dependency>
+                            <!-- bloomberg customizations end -->
                         </ignoredDependencies>
+                        <!-- Ignore duplicate configs from our custom testcontainers image subst -->
+                        <ignoredResourcePatterns combine.children="append">
+                            <ignoredResourcePattern>testcontainers.properties</ignoredResourcePattern>
+                        </ignoredResourcePatterns>
                         <exceptions combine.children="append">
                             <exception>
                                 <conflictingDependencies>

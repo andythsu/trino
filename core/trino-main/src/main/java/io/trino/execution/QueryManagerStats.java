@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 
 import static io.trino.execution.QueryState.RUNNING;
 import static io.trino.spi.StandardErrorCode.ABANDONED_QUERY;
+import static io.trino.spi.StandardErrorCode.SYNTAX_ERROR;
 import static io.trino.spi.StandardErrorCode.USER_CANCELED;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -43,6 +44,7 @@ public class QueryManagerStats
     private final CounterStat abandonedQueries = new CounterStat();
     private final CounterStat canceledQueries = new CounterStat();
     private final CounterStat userErrorFailures = new CounterStat();
+    private final CounterStat syntaxErrors = new CounterStat();
     private final CounterStat internalFailures = new CounterStat();
     private final CounterStat externalFailures = new CounterStat();
     private final CounterStat insufficientResourcesFailures = new CounterStat();
@@ -112,6 +114,9 @@ public class QueryManagerStats
             }
             else if (info.getErrorCode().getCode() == USER_CANCELED.toErrorCode().getCode()) {
                 canceledQueries.update(1);
+            }
+            else if (info.getErrorCode().getCode() == SYNTAX_ERROR.toErrorCode().getCode()) {
+                syntaxErrors.update(1);
             }
             failedQueries.update(1);
         }
@@ -249,6 +254,13 @@ public class QueryManagerStats
     public CounterStat getCanceledQueries()
     {
         return canceledQueries;
+    }
+
+    @Managed
+    @Nested
+    public CounterStat getUserSyntaxErrors()
+    {
+        return syntaxErrors;
     }
 
     @Managed

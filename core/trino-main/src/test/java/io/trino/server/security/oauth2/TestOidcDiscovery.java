@@ -249,7 +249,7 @@ public class TestOidcDiscovery
                 assertThat(config.accessTokenIssuer()).isEqualTo(Optional.of(accessTokenIssuer));
                 assertThat(config.authUrl()).isEqualTo(authUrl);
                 assertThat(config.tokenUrl()).isEqualTo(tokenUrl);
-                assertThat(config.jwksUrl()).isEqualTo(jwksUrl);
+                assertThat(config.jwksUrls().getFirst()).isEqualTo(jwksUrl);
                 assertThat(config.userinfoUrl()).isEqualTo(Optional.of(userinfoUrl));
             }
         }
@@ -262,7 +262,7 @@ public class TestOidcDiscovery
         assertThat(config.accessTokenIssuer()).isEqualTo(accessTokenIssuer.map(URI::toString));
         assertThat(config.authUrl()).isEqualTo(issuer.resolve("/connect/authorize"));
         assertThat(config.tokenUrl()).isEqualTo(issuer.resolve("/connect/token"));
-        assertThat(config.jwksUrl()).isEqualTo(issuer.resolve("/jwks.json"));
+        assertThat(config.jwksUrls().getFirst()).isEqualTo(issuer.resolve("/jwks.json"));
         assertThat(config.userinfoUrl()).isEqualTo(userinfoUrl);
         assertThat(config.endSessionUrl()).isEqualTo(endSessionUrl);
     }
@@ -271,7 +271,7 @@ public class TestOidcDiscovery
     {
         List<Authenticator> authenticators = server.getInstance(new Key<>() {});
         assertThat(authenticators).hasSize(1);
-        assertThat(authenticators.get(0)).isInstanceOf(OAuth2Authenticator.class);
+        assertThat(authenticators.getFirst()).isInstanceOf(OAuth2Authenticator.class);
         assertThat(server.getInstance(Key.get(WebUiAuthenticationFilter.class))).isInstanceOf(OAuth2WebUiAuthenticationFilter.class);
         // does not throw an exception
         server.getInstance(Key.get(OAuth2Client.class)).load();

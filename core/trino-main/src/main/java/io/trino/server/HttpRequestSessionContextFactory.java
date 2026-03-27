@@ -33,6 +33,7 @@ import io.trino.spi.security.GroupProvider;
 import io.trino.spi.security.Identity;
 import io.trino.spi.security.SelectedRole;
 import io.trino.spi.security.SelectedRole.Type;
+import io.trino.spi.security.UserAttributeProvider;
 import io.trino.spi.session.ResourceEstimates;
 import io.trino.sql.parser.ParsingException;
 import io.trino.sql.parser.SqlParser;
@@ -74,6 +75,7 @@ public class HttpRequestSessionContextFactory
     private final AccessControl accessControl;
     private final Optional<String> alternateHeaderName;
     private final QueryDataEncoder.EncoderSelector encoderSelector;
+    private final UserAttributeProvider userAttributeProvider;
 
     @Inject
     public HttpRequestSessionContextFactory(
@@ -82,7 +84,8 @@ public class HttpRequestSessionContextFactory
             GroupProvider groupProvider,
             AccessControl accessControl,
             ProtocolConfig protocolConfig,
-            QueryDataEncoder.EncoderSelector encoderSelector)
+            QueryDataEncoder.EncoderSelector encoderSelector,
+            UserAttributeProvider userAttributeProvider)
     {
         this.alternateHeaderName = protocolConfig.getAlternateHeaderName();
         this.preparedStatementEncoder = requireNonNull(preparedStatementEncoder, "preparedStatementEncoder is null");
@@ -90,6 +93,7 @@ public class HttpRequestSessionContextFactory
         this.groupProvider = requireNonNull(groupProvider, "groupProvider is null");
         this.accessControl = requireNonNull(accessControl, "accessControl is null");
         this.encoderSelector = requireNonNull(encoderSelector, "encoderSelector is null");
+        this.userAttributeProvider = requireNonNull(userAttributeProvider, "userAttributesProvider is null");
     }
 
     public SessionContext createSessionContext(
@@ -218,6 +222,8 @@ public class HttpRequestSessionContextFactory
                 // load enabled roles for authenticated identity, so impersonation permissions can be assigned to roles
                 authenticatedIdentity = Identity.from(authenticatedIdentity)
                         .withEnabledRoles(metadata.listEnabledRoles(authenticatedIdentity))
+                        .withAdditionalGroups(groupProvider.getGroups(authenticatedIdentity.getUser()))
+                        .withAdditionalUserAttributes(userAttributeProvider.getUserAttributes(authenticatedIdentity.getUser(), authenticatedIdentity.getPrincipal()))
                         .build();
                 accessControl.checkCanImpersonateUser(authenticatedIdentity, originalIdentity.getUser());
             }
@@ -265,6 +271,8 @@ public class HttpRequestSessionContextFactory
                 .withAdditionalConnectorRoles(parseConnectorRoleHeaders(protocolHeaders, headers))
                 .withAdditionalExtraCredentials(parseExtraCredentials(protocolHeaders, headers))
                 .withAdditionalGroups(groupProvider.getGroups(user))
+                /*********** Bloomberg customization ***********/
+                .withAdditionalUserAttributes(userAttributeProvider.getUserAttributes(user, authenticatedIdentity.flatMap(Identity::getPrincipal)))
                 .withEnabledRoles(systemEnabledRoles.build())
                 .build();
         return addEnabledRoles(newIdentity, systemRole, metadata);
@@ -281,6 +289,7 @@ public class HttpRequestSessionContextFactory
                     .withUser(originalUser)
                     .withExtraCredentials(new HashMap<>())
                     .withGroups(groupProvider.getGroups(originalUser))
+                    .withUserAttributes(userAttributeProvider.getUserAttributes(originalUser, identity.getPrincipal()))
                     .build();
             if (originalRoles.isPresent()) {
                 newIdentity = addEnabledRoles(newIdentity, SelectedRole.valueOf(originalRoles.get()), metadata);

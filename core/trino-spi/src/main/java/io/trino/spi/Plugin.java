@@ -25,6 +25,7 @@ import io.trino.spi.security.GroupProviderFactory;
 import io.trino.spi.security.HeaderAuthenticatorFactory;
 import io.trino.spi.security.PasswordAuthenticatorFactory;
 import io.trino.spi.security.SystemAccessControlFactory;
+import io.trino.spi.security.UserAttributeProviderFactory;
 import io.trino.spi.session.SessionPropertyConfigurationManagerFactory;
 import io.trino.spi.spool.SpoolingManagerFactory;
 import io.trino.spi.type.ParametricType;
@@ -118,6 +119,11 @@ public interface Plugin
     }
 
     default Iterable<SpoolingManagerFactory> getSpoolingManagerFactories()
+    {
+        return emptyList();
+    }
+
+    default Iterable<UserAttributeProviderFactory> getUserAttributeFactories()
     {
         return emptyList();
     }

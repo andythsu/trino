@@ -93,6 +93,8 @@ public final class TestHelpers
         config.getOpaColumnMaskingUri().ifPresent(columnMaskingUri -> configBuilder.put("opa.policy.column-masking-uri", columnMaskingUri.toString()));
         config.getOpaBatchColumnMaskingUri().ifPresent(batchColumnMaskingUri -> configBuilder.put("opa.policy.batch-column-masking-uri", batchColumnMaskingUri.toString()));
         config.getAdditionalContextFile().ifPresent(additionalContextFile -> configBuilder.put("opa.context-file", additionalContextFile.toString()));
+        /*********** Bloomberg customization ***********/
+        config.getOpaBatchSize().ifPresent(batchUri -> configBuilder.put("opa.policy.batch-size", batchUri.toString()));
         return configBuilder.buildOrThrow();
     }
 

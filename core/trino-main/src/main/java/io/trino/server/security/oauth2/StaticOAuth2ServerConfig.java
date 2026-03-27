@@ -18,6 +18,7 @@ import io.airlift.configuration.ConfigDescription;
 import jakarta.validation.constraints.NotNull;
 
 import java.net.URI;
+import java.util.List; /*********** Bloomberg customization ***********/
 import java.util.Optional;
 
 public class StaticOAuth2ServerConfig
@@ -32,7 +33,8 @@ public class StaticOAuth2ServerConfig
     private Optional<String> accessTokenIssuer = Optional.empty();
     private URI authUrl;
     private URI tokenUrl;
-    private URI jwksUrl;
+    /*********** Bloomberg customization: multi-JWKS support ***********/
+    private List<URI> jwksUrls;
     private Optional<URI> userinfoUrl = Optional.empty();
     private Optional<URI> endSessionUrl = Optional.empty();
 
@@ -78,17 +80,19 @@ public class StaticOAuth2ServerConfig
         return this;
     }
 
+    /*********** Bloomberg customization: multi-JWKS support ***********/
     @NotNull
-    public URI getJwksUrl()
+    public List<URI> getJwksUrls()
     {
-        return jwksUrl;
+        return jwksUrls;
     }
 
     @Config(JWKS_URL)
     @ConfigDescription("URL of the authorization server's JWKS (JSON Web Key Set) endpoint")
-    public StaticOAuth2ServerConfig setJwksUrl(URI jwksUrl)
+    /*********** Bloomberg customization: multi-JWKS support ***********/
+    public StaticOAuth2ServerConfig setJwksUrls(List<URI> jwksUrls)
     {
-        this.jwksUrl = jwksUrl;
+        this.jwksUrls = jwksUrls;
         return this;
     }
 

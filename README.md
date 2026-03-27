@@ -1,3 +1,10 @@
+[![Devise](https://badges.dev.bloomberg.com/live/devise/verify-status/prestosql/trino)](https://devise.dx.bloomberg.com/repository/PRESTOSQLTRINO)
+[![](https://badges.dev.bloomberg.com/badge//Java%2022?icon=java)](#)
+
+[![](https://badges.dev.bloomberg.com/badge//DRQS%202307/blue?icon=terminal)](https://blinks.bloomberg.com/screens/DRQS%20A%20%2FGR%202307)
+[![](https://badges.dev.bloomberg.com/badge//DRQS%203611/blue?icon=terminal)](https://blinks.bloomberg.com/screens/DRQS%20A%20%2FGR%203611)
+[![](https://badges.dev.bloomberg.com/badge//BLST%20DATALAKE/blue?icon=rss)](https://blinks.bloomberg.com/screens/BLST%20%2FNAME%20Datalake)
+
 <p align="center">
     <a href="https://trino.io/"><img alt="Trino Logo" src=".github/homepage.png" /></a>
 </p>
@@ -50,8 +57,12 @@ Trino supports [reproducible builds](https://reproducible-builds.org) as of vers
 * Docker
   * Turn SELinux or other systems disabling write access to the local checkout
     off, to allow containers to mount parts of the Trino source tree
+* SDKMan is a good way to manage maven and java. Take a look at
+  * https://bbgithub.dev.bloomberg.com/analyst-modules/bnef_analysts_base_docker/blob/master/docker_files/install_sdkman.sh
 
 ## Building Trino
+
+
 
 Trino is a standard Maven project. Simply run the following command from the
 project root directory:
@@ -142,3 +153,21 @@ Run a query to see the nodes in the cluster:
 Run a query against the TPCH connector:
 
     SELECT * FROM tpch.tiny.region;
+
+## Deployment
+
+- Manually create a release on [Jenkins](https://datalake.jaas.dev.bloomberg.com/blue/organizations/jenkins/prestosql%2Ftrino/branches)
+  - Choose the right branch to start a release
+  - Jenkins will build and deploy Trino artifacts to artifactory
+  - Jenkins will also create a release in bbgithub releases
+  > ⚠ WARNING ⚠
+  >
+  > If the pipeline failed for whatever reason and you want to re-run Jenkins, 
+  > you need to make sure there's no release created already. 
+  > For example: if you are releasing 475.7 but it failed, you need to remove it from 
+  > [releases page](https://bbgithub.dev.bloomberg.com/prestosql/trino/releases), otherwise Jenkins will fail.
+- Follow the instructions in [trino-images](https://bbgithub.dev.bloomberg.com/datalake/trino-images) on how to build a docker image
+
+For example:
+![jenkins-deployment.png](jenkins-deployment.png)
+warniwwarni

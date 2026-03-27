@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema
+        xmlns:tns="urn:x-bloomberg-com:BAS.services.sesget"
+        xmlns:bdem="http://bloomberg.com/schemas/bdem"
+        elementFormDefault="qualified"
+        targetNamespace="urn:x-bloomberg-com:BAS.services.sesget"
+        bdem:requestType='Request'
+        bdem:responseType='Response'
+        bdem:serviceInfo='sesget:301157-1.1'
+        bdem:preserveEnumOrder='1'
+        xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:complexType name="Request">
+        <xs:choice>
+            <xs:element name="retrieveSession" type="tns:RetrieveSessionRequest" />
+        </xs:choice>
+    </xs:complexType>
+
+    <xs:complexType name="Response">
+        <xs:annotation>
+            <xs:documentation xml:lang="en">
+                - `session` response will be sent when a Session is
+                successfully loaded.
+                - `sessionError` response will be sent otherwise, including
+                when a Session is not found.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:choice>
+            <xs:element name="session" type="tns:SessionResponse" />
+            <xs:element name="sessionError" type="tns:SessionErrorResponse" />
+        </xs:choice>
+    </xs:complexType>
+
+    <xs:complexType name="RetrieveSessionRequest">
+        <xs:annotation>
+            <xs:documentation xml:lang="en">
+                - `sessionId` can be omitted, in which case the session id
+                will be taken from the BAS request context.
+                - `blocks` lists the blocks desired blocks to return. Values
+                correspond to the `sest::BlockType` enum and unknown values
+                will cause request failure. If the Session does not contain
+                a requested block response will still be successful but that
+                block will not be included.
+                - `encoding` specifies the desired encoding for the block data.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="sessionId" type="xs:string" minOccurs="0" />
+            <xs:element name="blocks" type="xs:string" maxOccurs="unbounded" />
+            <xs:element name="encoding" type="xs:string" default="JSON" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="SessionResponse">
+        <xs:sequence>
+            <xs:element name="header" type="tns:SessionHeader" />
+            <xs:element name="blocks" type="tns:SessionBlock" maxOccurs="unbounded" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="SessionErrorResponse" bdem:parameterizedConstructor="1">
+        <xs:sequence>
+            <xs:element name="reason" type="xs:string" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="SessionHeader">
+        <xs:annotation>
+            <xs:documentation xml:lang="en">
+                - `sessionType` corresponds to the `sest::SessionType` enum.
+                - `created` and `expires` are ISO-8601 encoded `DateTimeTz`.
+                - `availableBlocks` lists the blocks attached to this Session.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="sessionId" type="xs:string" />
+            <xs:element name="sessionType" type="xs:int" />
+            <xs:element name="created" type="xs:dateTime" />
+            <xs:element name="expires" type="xs:dateTime" />
+            <xs:element name="availableBlocks" type="xs:string" maxOccurs="unbounded" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="SessionBlock">
+        <xs:annotation>
+            <xs:documentation xml:lang="en">
+                - `name` corresponds to the `sest::BlockType` enum.
+                - `data` is the block encoded using `dataEncoding` encoding.
+                - `dataEncoding` corresponds to the `BlockEncoding` enum.
+                - `schema` indicates which schema was used to do this encoding.
+                Most languages won't care about the schema, but it can be
+                retrieved via the `sesschema` BAS service if needed.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="name" type="xs:string" />
+            <xs:element name="data" type="xs:string" />
+            <xs:element name="dataEncoding" type="xs:string" />
+            <xs:element name="schema" type="tns:BlockSchema" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="BlockSchema">
+        <xs:sequence>
+            <xs:element name="name" type="xs:string" />
+            <xs:element name="version" type="xs:int" />
+        </xs:sequence>
+    </xs:complexType>
+
+
+    <xs:simpleType name="BlockEncoding" bdem:preserveEnumOrder='1'>
+        <!-- Note that because of compatibility problems of using enums, we
+             include the list of encodings here but do not link it as the
+             actual type for requests/responses -->
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="JSON" bdem:id="0" />
+        </xs:restriction>
+    </xs:simpleType>
+
+
+    <xs:element name="request" type="tns:Request" />
+    <xs:element name="response" type="tns:Response" />
+</xs:schema>

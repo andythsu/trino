@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" child.project.url.inherit.append.path="false" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.trino</groupId>
+        <artifactId>trino-root</artifactId>
+        <version>480.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <groupId>com.bloomberg.datalake.trino</groupId>
+    <artifactId>bloomberg-root</artifactId>
+    <version>480.0</version>
+    <packaging>pom</packaging>
+
+    <description>Bloomberg modules for Trino</description>
+
+    <modules>
+        <module>datalake-build</module>
+        <module>datalake-main</module>
+        <module>datalake-server-dev</module>
+        <module>datalake-server-main</module>
+        <module>error-logger-provider</module>
+        <module>lib/datalake-bas-reactor-bom</module>
+        <module>plugins/datalake-bas</module>
+        <module>plugins/datalake-comdb2</module>
+        <module>plugins/datalake-externalhttp-groups-provider</module>
+        <module>plugins/datalake-geo-tools</module>
+        <module>plugins/datalake-ldap-authenticator</module>
+        <module>plugins/datalake-user-attribute-provider</module>
+        <module>plugins/trino-trino</module>
+
+    </modules>
+
+    <properties>
+        <bbjava.testcontainers.version>2.9.0</bbjava.testcontainers.version>
+        <!-- this library currently builds with trino, so the version will need to be the same as Trino.
+        Maven automatically sets the version during release. TODO: separate this library from Trino -->
+        <deps.datalake.errorlogger.version>${parent.version}</deps.datalake.errorlogger.version>
+        <deps.datalake.bpi.version>12</deps.datalake.bpi.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.bloomberg.datalake.bpi</groupId>
+                <artifactId>bpi</artifactId>
+                <version>${deps.datalake.bpi.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.bloomberg.datalake.bpi</groupId>
+                <artifactId>bpi</artifactId>
+                <version>${deps.datalake.bpi.version}</version>
+                <type>test-jar</type>
+            </dependency>
+
+            <dependency>
+                <groupId>com.bloomberg.datalake.errorlogger</groupId>
+                <artifactId>error-logger-provider</artifactId>
+                <version>${deps.datalake.errorlogger.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.bloomberg.datalake.trino</groupId>
+                <artifactId>datalake-main</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.bloomberg.datalake.trino</groupId>
+                <artifactId>datalake-main</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+            </dependency>
+
+            <dependency>
+                <groupId>com.bloomberg.testcontainers</groupId>
+                <artifactId>bas-core</artifactId>
+                <version>${bbjava.testcontainers.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.bloomberg.testcontainers</groupId>
+                <artifactId>bas-junit</artifactId>
+                <version>${bbjava.testcontainers.version}</version>
+            </dependency>
+
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- GeoTools Requirements to download from repositories -->
+    <repositories>
+        <repository>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>osgeo</id>
+            <name>OSGeo Release Repository</name>
+            <url>https://artprod.dev.bloomberg.com/artifactory/maven-upstream-osgeo-release</url>
+        </repository>
+        <repository>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <id>osgeo-snapshot</id>
+            <name>OSGeo Snapshot Repository</name>
+            <url>https://artprod.dev.bloomberg.com/artifactory/maven-upstream-osgeo-snapshot</url>
+        </repository>
+    </repositories>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.trino</groupId>
+                <artifactId>trino-maven-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <allowedProvidedDependencies>
+                        <id>com.bloomberg.datalake.bpi:bpi</id>
+                    </allowedProvidedDependencies>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

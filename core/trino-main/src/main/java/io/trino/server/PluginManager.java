@@ -31,6 +31,7 @@ import io.trino.metadata.LanguageFunctionEngineManager;
 import io.trino.metadata.TypeRegistry;
 import io.trino.security.AccessControlManager;
 import io.trino.security.GroupProviderManager;
+import io.trino.security.UserAttributeProviderManager;
 import io.trino.server.protocol.spooling.SpoolingManagerRegistry;
 import io.trino.server.security.CertificateAuthenticatorManager;
 import io.trino.server.security.HeaderAuthenticatorManager;
@@ -49,6 +50,7 @@ import io.trino.spi.security.GroupProviderFactory;
 import io.trino.spi.security.HeaderAuthenticatorFactory;
 import io.trino.spi.security.PasswordAuthenticatorFactory;
 import io.trino.spi.security.SystemAccessControlFactory;
+import io.trino.spi.security.UserAttributeProviderFactory;
 import io.trino.spi.session.SessionPropertyConfigurationManagerFactory;
 import io.trino.spi.spool.SpoolingManagerFactory;
 import io.trino.spi.type.ParametricType;
@@ -76,6 +78,7 @@ public class PluginManager
             .add("io.airlift.slice.")
             .add("io.opentelemetry.api.")
             .add("io.opentelemetry.context.")
+            .add("com.bloomberg.datalake.bpi.")
             .build();
 
     private static final Logger log = Logger.get(PluginManager.class);
@@ -98,6 +101,7 @@ public class PluginManager
     private final TypeRegistry typeRegistry;
     private final BlockEncodingManager blockEncodingManager;
     private final HandleResolver handleResolver;
+    private final UserAttributeProviderManager userAttributeProviderManager;
     private final AtomicBoolean pluginsLoading = new AtomicBoolean();
 
     @Inject
@@ -119,7 +123,8 @@ public class PluginManager
             BlockEncodingManager blockEncodingManager,
             HandleResolver handleResolver,
             ExchangeManagerRegistry exchangeManagerRegistry,
-            SpoolingManagerRegistry spoolingManagerRegistry)
+            SpoolingManagerRegistry spoolingManagerRegistry,
+            UserAttributeProviderManager userAttributeProviderManager)
     {
         this.pluginsProvider = requireNonNull(pluginsProvider, "pluginsProvider is null");
         this.catalogStoreManager = requireNonNull(catalogStoreManager, "catalogStoreManager is null");
@@ -139,6 +144,7 @@ public class PluginManager
         this.handleResolver = requireNonNull(handleResolver, "handleResolver is null");
         this.exchangeManagerRegistry = requireNonNull(exchangeManagerRegistry, "exchangeManagerRegistry is null");
         this.spoolingManagerRegistry = requireNonNull(spoolingManagerRegistry, "spoolingManagerRegistry is null");
+        this.userAttributeProviderManager = requireNonNull(userAttributeProviderManager, "userAttributeProviderManager is null");
     }
 
     @Override
@@ -285,6 +291,11 @@ public class PluginManager
         for (SpoolingManagerFactory spoolingManagerFactory : plugin.getSpoolingManagerFactories()) {
             log.info("Registering spooling manager %s", spoolingManagerFactory.getName());
             spoolingManagerRegistry.addSpoolingManagerFactory(spoolingManagerFactory);
+        }
+
+        for (UserAttributeProviderFactory userAttributeProviderFactory : plugin.getUserAttributeFactories()) {
+            log.info("Registering user attribute provider %s", userAttributeProviderFactory.getName());
+            userAttributeProviderManager.addUserAttributeProviderFactory(userAttributeProviderFactory);
         }
     }
 

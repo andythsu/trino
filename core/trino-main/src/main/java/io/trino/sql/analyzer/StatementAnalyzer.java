@@ -92,6 +92,7 @@ import io.trino.spi.function.table.TableFunctionAnalysis;
 import io.trino.spi.security.AccessDeniedException;
 import io.trino.spi.security.GroupProvider;
 import io.trino.spi.security.Identity;
+import io.trino.spi.security.UserAttributeProvider;
 import io.trino.spi.security.ViewExpression;
 import io.trino.spi.type.ArrayType;
 import io.trino.spi.type.CharType;
@@ -448,6 +449,7 @@ class StatementAnalyzer
     private final Session session;
     private final SqlParser sqlParser;
     private final GroupProvider groupProvider;
+    private final UserAttributeProvider userAttributeProvider;
     private final AccessControl accessControl;
     private final TransactionManager transactionManager;
     private final TableProceduresRegistry tableProceduresRegistry;
@@ -466,6 +468,7 @@ class StatementAnalyzer
             PlannerContext plannerContext,
             SqlParser sqlParser,
             GroupProvider groupProvider,
+            UserAttributeProvider userAttributeProvider,
             AccessControl accessControl,
             TransactionManager transactionManager,
             Session session,
@@ -484,6 +487,7 @@ class StatementAnalyzer
         this.typeCoercion = new TypeCoercion(plannerContext.getTypeManager()::getType);
         this.sqlParser = requireNonNull(sqlParser, "sqlParser is null");
         this.groupProvider = requireNonNull(groupProvider, "groupProvider is null");
+        this.userAttributeProvider = requireNonNull(userAttributeProvider, "attributeProvider is null");
         this.accessControl = requireNonNull(accessControl, "accessControl is null");
         this.transactionManager = requireNonNull(transactionManager, "transactionManager is null");
         this.session = requireNonNull(session, "session is null");
@@ -5171,6 +5175,7 @@ class StatementAnalyzer
                 if (owner.isPresent()) {
                     identity = Identity.from(owner.get())
                             .withGroups(groupProvider.getGroups(owner.get().getUser()))
+                            .withUserAttributes(userAttributeProvider.getUserAttributes(owner.get().getUser(), owner.get().getPrincipal()))
                             .build();
                     if (owner.get().getUser().equals(session.getIdentity().getUser())) {
                         // View owner does not need GRANT OPTION to grant access themselves
@@ -5313,6 +5318,7 @@ class StatementAnalyzer
                 Identity filterIdentity = filter.getSecurityIdentity()
                         .map(filterUser -> Identity.forUser(filterUser)
                                 .withGroups(groupProvider.getGroups(filterUser))
+                                .withUserAttributes(userAttributeProvider.getUserAttributes(filterUser, Optional.empty()))
                                 .build())
                         .orElseGet(session::getIdentity);
                 expressionAnalysis = ExpressionAnalyzer.analyzeExpression(
@@ -5370,8 +5376,9 @@ class StatementAnalyzer
             try {
                 Identity constraintIdentity = constraint.getSecurityIdentity()
                         .map(user -> Identity.forUser(user)
-                            .withGroups(groupProvider.getGroups(user))
-                            .build())
+                                .withGroups(groupProvider.getGroups(user))
+                                .withUserAttributes(userAttributeProvider.getUserAttributes(user, Optional.empty()))
+                                .build())
                         .orElseGet(session::getIdentity);
                 expressionAnalysis = ExpressionAnalyzer.analyzeExpression(
                         session.createViewSession(constraint.getCatalog(), constraint.getSchema(), constraintIdentity, constraint.getPath()),
@@ -5436,6 +5443,7 @@ class StatementAnalyzer
                 Identity maskIdentity = mask.getSecurityIdentity()
                         .map(maskUser -> Identity.forUser(maskUser)
                                 .withGroups(groupProvider.getGroups(maskUser))
+                                .withUserAttributes(userAttributeProvider.getUserAttributes(maskUser, Optional.empty()))
                                 .build())
                         .orElseGet(session::getIdentity);
                 expressionAnalysis = ExpressionAnalyzer.analyzeExpression(

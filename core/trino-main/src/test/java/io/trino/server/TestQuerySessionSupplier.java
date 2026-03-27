@@ -74,7 +74,8 @@ public class TestQuerySessionSupplier
             ImmutableSet::of,
             new AllowAllAccessControl(),
             new ProtocolConfig(),
-            QueryDataEncoder.EncoderSelector.noEncoder());
+            QueryDataEncoder.EncoderSelector.noEncoder(),
+            (_, _) -> ImmutableMap.of());
 
     @Test
     public void testCreateSession()
@@ -248,6 +249,8 @@ public class TestQuerySessionSupplier
                 metadata,
                 new AllowAllAccessControl(),
                 new SessionPropertyManager(),
-                config);
+                config,
+                _ -> ImmutableSet.of(),
+                (_, _) -> ImmutableMap.of());
     }
 }

@@ -425,7 +425,8 @@ public class TestWebUi
                     ImmutableSet::of,
                     accessControl,
                     new ProtocolConfig(),
-                    QueryDataEncoder.EncoderSelector.noEncoder());
+                    QueryDataEncoder.EncoderSelector.noEncoder(),
+                    (_, _) -> ImmutableMap.of());
         }
 
         @ResourceSecurity(WEB_UI)

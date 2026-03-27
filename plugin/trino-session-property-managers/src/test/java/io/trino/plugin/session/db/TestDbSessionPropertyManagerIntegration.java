@@ -19,9 +19,11 @@ import com.google.common.io.Closer;
 import com.google.inject.Binder;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.mysql.cj.jdbc.MysqlDataSource;
+import com.google.inject.Singleton;
 import io.airlift.bootstrap.Bootstrap;
+import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.json.JsonModule;
 import io.airlift.units.Duration;
 import io.trino.Session;
@@ -53,6 +55,8 @@ import java.util.Optional;
 
 import static com.google.common.collect.MoreCollectors.onlyElement;
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVariables;
+import static io.trino.plugin.session.db.util.SessionPropertiesDaoUtil.PROPERTIES_TABLE;
 import static io.trino.testing.TestingSession.DEFAULT_TIME_ZONE_KEY;
 import static java.util.Collections.emptyMap;
 import static java.util.Locale.ENGLISH;
@@ -74,6 +78,8 @@ public class TestDbSessionPropertyManagerIntegration
 
     private TestingMySqlContainer mysqlContainer;
     private SessionPropertiesDao dao;
+    /*********** Bloomberg customization — needed for raw SQL since DDL methods removed from DAO ***********/
+    private Jdbi jdbi;
 
     private static QueryRunner createQueryRunner()
             throws Exception
@@ -122,11 +128,9 @@ public class TestDbSessionPropertyManagerIntegration
                         .put("session-property-manager.db.password", mysqlContainer.getPassword())
                         .buildOrThrow());
 
-        MysqlDataSource dataSource = new MysqlDataSource();
-        dataSource.setURL(mysqlContainer.getJdbcUrl());
-        dataSource.setUser(mysqlContainer.getUsername());
-        dataSource.setPassword(mysqlContainer.getPassword());
-        dao = Jdbi.create(dataSource)
+        /*********** Bloomberg customization — keep Jdbi reference for raw SQL ***********/
+        jdbi = Jdbi.create(mysqlContainer.getJdbcUrl(), mysqlContainer.getUsername(), mysqlContainer.getPassword());
+        dao = jdbi
                 .installPlugin(new SqlObjectPlugin())
                 .onDemand(SessionPropertiesDao.class);
     }
@@ -134,24 +138,35 @@ public class TestDbSessionPropertyManagerIntegration
     @Test // "Test successful and unsuccessful reloading of SessionMatchSpecs from the database"
     public void testOperation()
     {
+        /*********** Bloomberg customization — user_group_regex added as 3rd arg ***********/
         // Configure the session property for users with user regex user1.*
-        dao.insertSpecRow(1, "user1.*", null, null, null, 0);
+        dao.insertSpecRow(1, "user1.*", null, null, null, null, 0);
         dao.insertSessionProperty(1, EXAMPLE_PROPERTY, EXAMPLE_VALUE_CONFIGURED.toString());
 
         // All queries with matching session should have overridden session properties
         assertSessionPropertyValue("user123", EXAMPLE_VALUE_CONFIGURED);
 
         // Add a spec and simulate a bad database operation to intentionally fail further queries
-        dao.insertSpecRow(2, "user3.*", null, null, null, 0);
+        dao.insertSpecRow(2, "user3.*", null, null, null, null, 0);
         dao.insertSessionProperty(2, EXAMPLE_PROPERTY, EXAMPLE_VALUE_CONFIGURED.toString());
-        dao.dropSessionPropertiesTable();
+        /*********** Bloomberg customization — DDL methods removed from DAO, use raw SQL ***********/
+        jdbi.useHandle(h -> h.execute("DROP TABLE IF EXISTS " + PROPERTIES_TABLE));
 
         // Reloading should fail now, old values should still be in use.
         assertSessionPropertyValue("user123", EXAMPLE_VALUE_CONFIGURED);
         assertSessionPropertyValue("user345", EXAMPLE_VALUE_DEFAULT);
 
+        /*********** Bloomberg customization — DDL methods removed from DAO, use raw SQL ***********/
         // Fix the database by re-constructing the dropped table
-        dao.createSessionPropertiesTable();
+        jdbi.useHandle(h -> {
+            h.execute("CREATE TABLE IF NOT EXISTS " + PROPERTIES_TABLE + " (\n" +
+                    "property_spec_id BIGINT NOT NULL,\n" +
+                    "session_property_name VARCHAR(512),\n" +
+                    "session_property_value VARCHAR(512),\n" +
+                    "PRIMARY KEY (property_spec_id, session_property_name),\n" +
+                    "FOREIGN KEY (property_spec_id) REFERENCES session_specs (spec_id)\n" +
+                    ")");
+        });
         dao.insertSessionProperty(1, EXAMPLE_PROPERTY, EXAMPLE_VALUE_CONFIGURED.toString());
         dao.insertSessionProperty(2, EXAMPLE_PROPERTY, EXAMPLE_VALUE_CONFIGURED.toString());
 
@@ -204,6 +219,7 @@ public class TestDbSessionPropertyManagerIntegration
         }
     }
 
+    /*********** Bloomberg customization — added @Provides Jdbi (Bloomberg's module requires it) ***********/
     private static class TestingDbSessionPropertyManagerModule
             implements Module
     {
@@ -216,8 +232,16 @@ public class TestDbSessionPropertyManagerIntegration
             binder.bind(SessionPropertiesDao.class).toProvider(SessionPropertiesDaoProvider.class).in(Scopes.SINGLETON);
             newExporter(binder).export(DbSessionPropertyManager.class).withGeneratedName();
         }
+
+        @Provides
+        @Singleton
+        public Jdbi getJdbi(DbSessionPropertyManagerConfig config)
+        {
+            return DbSessionPropertyManagerModule.getJdbi(config);
+        }
     }
 
+    /*********** Bloomberg customization — added FlywayMigration (Bloomberg uses Flyway for schema management) ***********/
     private static class TestingDbSessionPropertyManagerFactory
             implements SessionPropertyConfigurationManagerFactory
     {
@@ -230,6 +254,7 @@ public class TestDbSessionPropertyManagerIntegration
         @Override
         public SessionPropertyConfigurationManager create(Map<String, String> config, SessionPropertyConfigurationManagerContext context)
         {
+            FlywayMigration.migrate(new ConfigurationFactory(replaceEnvironmentVariables(config)).build(DbSessionPropertyManagerConfig.class));
             Bootstrap app = new Bootstrap(
                     new JsonModule(),
                     new TestingDbSessionPropertyManagerModule());

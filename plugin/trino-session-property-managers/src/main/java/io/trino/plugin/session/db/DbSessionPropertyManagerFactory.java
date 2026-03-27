@@ -15,6 +15,7 @@ package io.trino.plugin.session.db;
 
 import com.google.inject.Injector;
 import io.airlift.bootstrap.Bootstrap;
+import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.json.JsonModule;
 import io.trino.plugin.base.jmx.MBeanServerModule;
 import io.trino.spi.resourcegroups.SessionPropertyConfigurationManagerContext;
@@ -25,6 +26,7 @@ import org.weakref.jmx.guice.MBeanModule;
 import java.util.Map;
 
 import static com.google.common.base.Throwables.throwIfUnchecked;
+import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVariables;
 
 public class DbSessionPropertyManagerFactory
         implements SessionPropertyConfigurationManagerFactory
@@ -39,6 +41,7 @@ public class DbSessionPropertyManagerFactory
     public SessionPropertyConfigurationManager create(Map<String, String> config, SessionPropertyConfigurationManagerContext context)
     {
         try {
+            FlywayMigration.migrate(new ConfigurationFactory(replaceEnvironmentVariables(config)).build(DbSessionPropertyManagerConfig.class));
             Bootstrap app = new Bootstrap(
                     "io.trino.bootstrap.session." + getName(),
                     new MBeanModule(),

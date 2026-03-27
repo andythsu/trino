@@ -1,0 +1,60 @@
+[
+  {
+    "name": "svc",
+    "serviceInfo": "svc:1-1.11",
+    "functions": [
+      {
+        "name": "data_request",
+        "columns": [
+          {
+            "columnName": "securityName",
+            "columnType": "VARCHAR",
+            "jsonKey": "securityNameKey"
+          }
+        ],
+        "parameterColumns": [
+          {
+            "columnName": "securityParameter",
+            "columnType": "VARCHAR",
+            "nullable": false,
+            "jsonKey": "securityNameParameterKey"
+          },
+          {
+            "columnName": "arrayCol",
+            "columnType": "ARRAY(VARCHAR)",
+            "nullable": false,
+            "jsonKey": "arrayColParameterKey",
+            "maxEntries": 100
+          }
+        ],
+        "requestTemplate": "templates/svc.request.json.jinja2",
+        "responseTransforms": {
+          "actions": [
+            {
+              "type": "unnest",
+              "key": "value1"
+            },
+            {
+              "type": "spread",
+              "key": "value2"
+            },
+            {
+              "type": "zip",
+              "zippers": [
+                {
+                  "type": "singleKey",
+                  "key": "value3"
+                },
+                {
+                  "type": "list",
+                  "key": "value4",
+                  "pattern": "ab[0-9]+"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

@@ -13,6 +13,7 @@
  */
 package io.trino.sql.analyzer;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import io.trino.Session;
@@ -25,6 +26,7 @@ import io.trino.metadata.TableProceduresRegistry;
 import io.trino.metadata.TablePropertyManager;
 import io.trino.security.AccessControl;
 import io.trino.spi.security.GroupProvider;
+import io.trino.spi.security.UserAttributeProvider;
 import io.trino.sql.PlannerContext;
 import io.trino.sql.parser.SqlParser;
 import io.trino.transaction.NoOpTransactionManager;
@@ -39,6 +41,7 @@ public class StatementAnalyzerFactory
     private final AccessControl accessControl;
     private final TransactionManager transactionManager;
     private final GroupProvider groupProvider;
+    private final UserAttributeProvider userAttributeProvider;
     private final TableProceduresRegistry tableProceduresRegistry;
     private final TableFunctionRegistry tableFunctionRegistry;
     private final TablePropertyManager tablePropertyManager;
@@ -56,13 +59,15 @@ public class StatementAnalyzerFactory
             TableFunctionRegistry tableFunctionRegistry,
             TablePropertyManager tablePropertyManager,
             AnalyzePropertyManager analyzePropertyManager,
-            TableProceduresPropertyManager tableProceduresPropertyManager)
+            TableProceduresPropertyManager tableProceduresPropertyManager,
+            UserAttributeProvider userAttributeProvider)
     {
         this.plannerContext = requireNonNull(plannerContext, "plannerContext is null");
         this.sqlParser = requireNonNull(sqlParser, "sqlParser is null");
         this.accessControl = requireNonNull(accessControl, "accessControl is null");
         this.transactionManager = requireNonNull(transactionManager, "transactionManager is null");
         this.groupProvider = requireNonNull(groupProvider, "groupProvider is null");
+        this.userAttributeProvider = requireNonNull(userAttributeProvider, "userAttributeProvider is null");
         this.tableProceduresRegistry = requireNonNull(tableProceduresRegistry, "tableProceduresRegistry is null");
         this.tableFunctionRegistry = requireNonNull(tableFunctionRegistry, "tableFunctionRegistry is null");
         this.tablePropertyManager = requireNonNull(tablePropertyManager, "tablePropertyManager is null");
@@ -82,7 +87,8 @@ public class StatementAnalyzerFactory
                 tableFunctionRegistry,
                 tablePropertyManager,
                 analyzePropertyManager,
-                tableProceduresPropertyManager);
+                tableProceduresPropertyManager,
+                userAttributeProvider);
     }
 
     public StatementAnalyzer createStatementAnalyzer(
@@ -97,6 +103,7 @@ public class StatementAnalyzerFactory
                 plannerContext,
                 sqlParser,
                 groupProvider,
+                userAttributeProvider,
                 accessControl,
                 transactionManager,
                 session,
@@ -125,6 +132,7 @@ public class StatementAnalyzerFactory
                 new TableFunctionRegistry(CatalogServiceProvider.fail("table functions are not supported in testing analyzer")),
                 tablePropertyManager,
                 analyzePropertyManager,
-                new TableProceduresPropertyManager(CatalogServiceProvider.fail("procedures are not supported in testing analyzer")));
+                new TableProceduresPropertyManager(CatalogServiceProvider.fail("procedures are not supported in testing analyzer")),
+                (_, _) -> ImmutableMap.of());
     }
 }

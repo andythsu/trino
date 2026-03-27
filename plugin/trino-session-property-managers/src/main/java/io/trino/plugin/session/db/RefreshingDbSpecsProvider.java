@@ -56,10 +56,6 @@ public class RefreshingDbSpecsProvider
     {
         this.dao = requireNonNull(dao, "dao is null");
         this.refreshPeriodMillis = config.getSpecsRefreshPeriod().toMillis();
-
-        dao.createSessionSpecsTable();
-        dao.createSessionClientTagsTable();
-        dao.createSessionPropertiesTable();
     }
 
     @PostConstruct

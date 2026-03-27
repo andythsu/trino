@@ -120,7 +120,8 @@ public class SessionPropertyDefaults
                 session.getSource(),
                 session.getClientTags(),
                 queryType,
-                resourceGroupId);
+                resourceGroupId,
+                session.getIdentity().getGroups());
 
         Map<String, String> systemPropertyOverrides = configurationManager.getSystemSessionProperties(context);
         Map<String, Map<String, String>> catalogPropertyOverrides = configurationManager.getCatalogSessionProperties(context);

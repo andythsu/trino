@@ -29,6 +29,7 @@ import io.airlift.log.Logger;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -122,7 +123,7 @@ public class OidcDiscovery
                     getOptionalField("access_token_issuer", Optional.ofNullable(metadataJson.get("access_token_issuer")).map(JsonNode::textValue), ACCESS_TOKEN_ISSUER, accessTokenIssuer),
                     getRequiredField("authorization_endpoint", metadata.getAuthorizationEndpointURI(), AUTH_URL, authUrl),
                     getRequiredField("token_endpoint", metadata.getTokenEndpointURI(), TOKEN_URL, tokenUrl),
-                    getRequiredField("jwks_uri", metadata.getJWKSetURI(), JWKS_URL, jwksUrl),
+                    List.of(getRequiredField("jwks_uri", metadata.getJWKSetURI(), JWKS_URL, jwksUrl)),
                     userinfoEndpoint.map(URI::create),
                     endSessionEndpoint);
         }

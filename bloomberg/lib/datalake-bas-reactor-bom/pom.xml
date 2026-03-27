@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.bloomberg.datalake.trino</groupId>
+        <artifactId>bloomberg-root</artifactId>
+        <version>480.0</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>datalake-bas-reactor-bom</artifactId>
+    <packaging>pom</packaging>
+    <description>Dependency management for compatibility between bas-reactor and Trino</description>
+
+    <properties>
+        <air.main.basedir>${project.parent.basedir}</air.main.basedir>
+        <!-- Version management for jackson libraries through Airbase; bas-reactor requires version 2.18.3 -->
+        <dep.jackson.version>2.21.2</dep.jackson.version>
+        <!-- jackson-annotations uses different versioning (no patch) since 2.20+ -->
+        <dep.jackson.annotations.version>2.21</dep.jackson.annotations.version>
+        <dep.bas-reactor.version>11.5.0.basmessagefactory-notlazy-SNAPSHOT</dep.bas-reactor.version>
+        <dep.bas-reactor-dependencies.version>11.4.1093</dep.bas-reactor-dependencies.version>
+        <!-- bas-reactor requires a higher version than Trino -->
+        <dep.reactor-core.version>3.7.8</dep.reactor-core.version>
+        <dep.reactor-netty-core.version>1.2.8</dep.reactor-netty-core.version>
+        <dep.bas-codecfactory.version>5.0.255</dep.bas-codecfactory.version>
+        <dep.bas-reactor-schemas-bsct.version>5.0.98</dep.bas-reactor-schemas-bsct.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+
+            <dependency>
+                <groupId>com.bloomberg.bas-reactor</groupId>
+                <artifactId>basreactor-dependencies</artifactId>
+                <!-- <version>${dep.bas-reactor-dependencies.version}</version> -->
+                <version>${dep.bas-reactor.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- netty version is now managed by airbase via the parent chain -->
+
+            <dependency>
+                <groupId>com.bloomberg.bas</groupId>
+                <artifactId>codecfactory</artifactId>
+                <version>${dep.bas-codecfactory.version}</version>
+                <exclusions>
+                    <!-- jackson-annotations is provided at runtime by the core -->
+                    <exclusion>
+                        <groupId>com.fasterxml.jackson.core</groupId>
+                        <artifactId>jackson-annotations</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.fasterxml.jackson.datatype</groupId>
+                        <artifactId>jackson-dataformat-xml</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.fasterxml.jackson.datatype</groupId>
+                        <artifactId>jackson-datatype-jsr310</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.fasterxml.jackson.datatype</groupId>
+                        <artifactId>jackson-module-jakarta-xmlbind-annotations</artifactId>
+                    </exclusion>
+                    <!-- slf4j is provided by Airlift -->
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>com.bloomberg.bas-reactor</groupId>
+                <artifactId>bas-reactor-client</artifactId>
+                <version>${dep.bas-reactor.version}</version>
+                <exclusions>
+                    <!-- jackson-annotations is provided at runtime by the core -->
+                    <exclusion>
+                        <groupId>com.fasterxml.jackson.core</groupId>
+                        <artifactId>jackson-annotations</artifactId>
+                    </exclusion>
+                    <!-- slf4j is provided by Airlift -->
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>com.bloomberg.bas-reactor.external.basmessage</groupId>
+                <artifactId>basmessage</artifactId>
+                <version>${dep.bas-reactor.version}</version>
+                <exclusions>
+                    <!-- slf4j is provided by Airlift -->
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>com.bloomberg.bas-reactor.external.schema</groupId>
+                <artifactId>schema</artifactId>
+                <version>${dep.bas-reactor.version}</version>
+                <exclusions>
+                    <!-- slf4j is provided by Airlift -->
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>com.bloomberg.bas-reactor.schemas</groupId>
+                <artifactId>bsct</artifactId>
+                <version>${dep.bas-reactor-schemas-bsct.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>${dep.jackson.annotations.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${dep.jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${dep.jackson.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.projectreactor</groupId>
+                <artifactId>reactor-core</artifactId>
+                <version>${dep.reactor-core.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.projectreactor.netty</groupId>
+                <artifactId>reactor-netty-core</artifactId>
+                <version>${dep.reactor-netty-core.version}</version>
+            </dependency>
+
+            <!-- com.bloomberg.bas:codecfactory transitively requires version 2.1.0, which is too old and causes conflicts -->
+            <dependency>
+                <groupId>jakarta.activation</groupId>
+                <artifactId>jakarta.activation-api</artifactId>
+                <version>2.1.4</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-stdlib</artifactId>
+                <version>2.2.0</version>
+            </dependency>
+
+            <!-- Some bas-reactor libraries don't agree on the version of this dependency -->
+            <dependency>
+                <groupId>org.threeten</groupId>
+                <artifactId>threeten-extra</artifactId>
+                <version>1.8.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.yaml</groupId>
+                <artifactId>snakeyaml</artifactId>
+                <version>2.6</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bloomberg</groupId>
+                <artifactId>uncheck</artifactId>
+                <version>3.1.56</version>
+                <scope>runtime</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>com.bloomberg.bas-reactor.external.basmessage</groupId>
+                <artifactId>bytebuf</artifactId>
+                <version>${dep.bas-reactor.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.basepom.maven</groupId>
+                    <artifactId>duplicate-finder-maven-plugin</artifactId>
+                    <configuration>
+                        <ignoredResourcePatterns>
+                            <!-- This is needed -->
+                            <ignoredResourcePattern>global.xjb</ignoredResourcePattern>
+                            <!-- These are inherited from airbase -->
+                            <ignoredResourcePattern>.*\.html</ignoredResourcePattern>
+                            <ignoredResourcePattern>META-INF/.*</ignoredResourcePattern>
+                            <ignoredResourcePattern>about_files/.*</ignoredResourcePattern>
+                            <ignoredResourcePattern>plugin\.properties</ignoredResourcePattern>
+                            <ignoredResourcePattern>.*\.java</ignoredResourcePattern>
+                            <ignoredResourcePattern>THIRD-PARTY</ignoredResourcePattern>
+                        </ignoredResourcePatterns>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

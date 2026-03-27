@@ -23,6 +23,7 @@ import io.airlift.log.Logger;
 import io.trino.plugin.base.security.DefaultSystemAccessControl;
 import io.trino.plugin.base.util.LoggingInvocationHandler;
 import io.trino.spi.security.GroupProvider;
+import io.trino.spi.security.UserAttributeProvider;
 import io.trino.tracing.ForTracing;
 import io.trino.tracing.TracingAccessControl;
 
@@ -43,6 +44,8 @@ public class AccessControlModule
         binder.bind(AccessControl.class).to(TracingAccessControl.class);
         binder.bind(GroupProviderManager.class).in(Scopes.SINGLETON);
         binder.bind(GroupProvider.class).to(GroupProviderManager.class).in(Scopes.SINGLETON);
+        binder.bind(UserAttributeProviderManager.class).in(Scopes.SINGLETON);
+        binder.bind(UserAttributeProvider.class).to(UserAttributeProviderManager.class).in(Scopes.SINGLETON);
         newExporter(binder).export(AccessControlManager.class).withGeneratedName();
     }
 

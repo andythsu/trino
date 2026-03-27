@@ -74,6 +74,7 @@ import io.trino.security.AccessControl;
 import io.trino.security.AccessControlConfig;
 import io.trino.security.AccessControlManager;
 import io.trino.security.GroupProviderManager;
+import io.trino.security.UserAttributeProviderManager;
 import io.trino.server.NodeStateManager;
 import io.trino.server.NodeStateManager.CurrentNodeState;
 import io.trino.server.PluginInstaller;
@@ -98,6 +99,7 @@ import io.trino.spi.connector.ConnectorName;
 import io.trino.spi.eventlistener.EventListener;
 import io.trino.spi.security.GroupProvider;
 import io.trino.spi.security.SystemAccessControl;
+import io.trino.spi.security.UserAttributeProvider;
 import io.trino.spi.session.PropertyMetadata;
 import io.trino.split.PageSourceManager;
 import io.trino.split.SplitManager;
@@ -112,6 +114,8 @@ import io.trino.testing.TestingAccessControlManager;
 import io.trino.testing.TestingEventListenerManager;
 import io.trino.testing.TestingGroupProvider;
 import io.trino.testing.TestingGroupProviderManager;
+import io.trino.testing.TestingUserAttributeProvider;
+import io.trino.testing.TestingUserAttributeProviderManager;
 import io.trino.testing.TestingWarningCollectorModule;
 import io.trino.tracing.ForTracing;
 import io.trino.tracing.TracingAccessControl;
@@ -198,6 +202,7 @@ public class TestingTrinoServer
     private final StatsCalculator statsCalculator;
     private final TestingAccessControlManager accessControl;
     private final TestingGroupProviderManager groupProvider;
+    private final TestingUserAttributeProviderManager userAttributeProvider;
     private final ProcedureTester procedureTester;
     private final Optional<InternalResourceGroupManager<?>> resourceGroupManager;
     private final SessionPropertyDefaults sessionPropertyDefaults;
@@ -324,12 +329,16 @@ public class TestingTrinoServer
                     binder.bind(AccessControlConfig.class).in(Scopes.SINGLETON);
                     binder.bind(TestingAccessControlManager.class).in(Scopes.SINGLETON);
                     binder.bind(TestingGroupProvider.class).in(Scopes.SINGLETON);
+                    binder.bind(TestingUserAttributeProvider.class).in(Scopes.SINGLETON);
                     binder.bind(TestingEventListenerManager.class).in(Scopes.SINGLETON);
                     binder.bind(AccessControlManager.class).to(TestingAccessControlManager.class).in(Scopes.SINGLETON);
                     binder.bind(EventListenerManager.class).to(TestingEventListenerManager.class).in(Scopes.SINGLETON);
                     binder.bind(TestingGroupProviderManager.class).in(Scopes.SINGLETON);
                     binder.bind(GroupProvider.class).to(TestingGroupProviderManager.class).in(Scopes.SINGLETON);
                     binder.bind(GroupProviderManager.class).to(TestingGroupProviderManager.class).in(Scopes.SINGLETON);
+                    binder.bind(TestingUserAttributeProviderManager.class).in(Scopes.SINGLETON);
+                    binder.bind(UserAttributeProvider.class).to(TestingUserAttributeProviderManager.class).in(Scopes.SINGLETON);
+                    binder.bind(UserAttributeProviderManager.class).to(TestingUserAttributeProviderManager.class).in(Scopes.SINGLETON);
                     binder.bind(AccessControl.class).annotatedWith(ForTracing.class).to(AccessControlManager.class).in(Scopes.SINGLETON);
                     binder.bind(AccessControl.class).to(TracingAccessControl.class).in(Scopes.SINGLETON);
                     binder.bind(ShutdownAction.class).to(TestShutdownAction.class).in(Scopes.SINGLETON);
@@ -393,6 +402,7 @@ public class TestingTrinoServer
         plannerContext = injector.getInstance(PlannerContext.class);
         accessControl = injector.getInstance(TestingAccessControlManager.class);
         groupProvider = injector.getInstance(TestingGroupProviderManager.class);
+        userAttributeProvider = injector.getInstance(TestingUserAttributeProviderManager.class);
         procedureTester = injector.getInstance(ProcedureTester.class);
         splitManager = injector.getInstance(SplitManager.class);
         pageSourceManager = injector.getInstance(PageSourceManager.class);
@@ -448,6 +458,16 @@ public class TestingTrinoServer
         // Technically `this` reference might escape here. However, the object is fully constructed.
         additionalConfiguration.accept(this);
         injector.getInstance(StartupStatus.class).startupComplete();
+    }
+
+    private static Path tempDirectory()
+    {
+        try {
+            return createTempDirectory("TrinoTest");
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override
@@ -605,6 +625,11 @@ public class TestingTrinoServer
         return groupProvider;
     }
 
+    public TestingUserAttributeProviderManager getUserAttributeProvider()
+    {
+        return userAttributeProvider;
+    }
+
     public ProcedureTester getProcedureTester()
     {
         return procedureTester;
@@ -715,16 +740,6 @@ public class TestingTrinoServer
                 attemptId,
                 injectionType,
                 errorType);
-    }
-
-    private static Path tempDirectory()
-    {
-        try {
-            return createTempDirectory("TrinoTest");
-        }
-        catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
     }
 
     public static class Builder

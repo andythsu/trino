@@ -1,0 +1,90 @@
+@Library(["jaas-workflow", 'jaazy-jeff-jaas']) _
+
+jaas.dockerAgent {
+    scm_clone_all_branches()
+
+    def j = jaazy()
+
+    def mavenEnv = j
+        .env("Docker")
+        .setImage("artprod.dev.bloomberg.com/datalake/maven:3.9.8-openjdk-25.0.1-open-rhel9-ubi-platform")
+        .setPrintEnvironmentVariables(true)
+        .setLocalAccountsMounted(true)
+        .setDockerSocketMounted(true)
+        .setFlags("--network host")
+
+    def infoMavenAgent = j
+        .agent("java.MavenAgent")
+        .inside(mavenEnv)
+
+    def mavenCmd = "./mvnw -s artifactory-settings.xml -B -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"
+    def bloombergModules = sh(returnStdout: true, script: """
+        cat bloomberg/pom.xml
+        | grep '<module>'
+        | sed 's/\\s*<module>\\(.*\\)<\\/module>/bloomberg\\/\\1/'
+        | sed '/datalake-build/d'
+        | tr '\\n' ','
+        """.stripIndent().replace("\n", " "))
+
+    def buildOutputDirectory = "bloomberg/datalake-build/target/"
+
+    def preTestAgent = j
+        .agent("generic.CommandLineAgent")
+        .setName("Pre-Test Build")
+        .inside(mavenEnv)
+        .setTestCommand("${mavenCmd} clean install -T 1C -DskipTests -am -pl ${bloombergModules}")
+
+    def testBloombergModulesAgent = j
+        .agent("generic.CommandLineAgent")
+        .setName("Test Bloomberg Modules")
+        .inside(mavenEnv)
+        .setTestCommand("${mavenCmd} test -amd -pl :bloomberg-root")
+
+    def testTrinoMainAgent = j
+        .agent("generic.CommandLineAgent")
+        .setName("Test trino-main")
+        .inside(mavenEnv)
+        .setTestCommand("${mavenCmd} test -T 1C -pl :trino-main,:trino-spi -Dtest='!TestOauth2WebUI*,!TestOAuth2WebUiAuthenticationFilter*'")
+
+    def testOpaPluginAgent = j
+        .agent("generic.CommandLineAgent")
+        .setName("Test trino-opa")
+        .inside(mavenEnv)
+        .setTestCommand("${mavenCmd} test -T 1C -pl :trino-opa")
+
+    def buildMavenAgent = j
+        .agent("generic.CommandLineAgent")
+        .setName("Build Trino")
+        .inside(mavenEnv)
+        .setBuildCommand("${mavenCmd} clean install -DskipTests -T 1C -pl '!:trino-docs,!:trino-server'")
+
+    def publishEnv = j
+        .env("Environment")
+        .addCredentialEnv(usernamePassword(credentialsId: "geo_data_ops_artifactory", usernameVariable: "ARTIFACTORY_USERNAME", passwordVariable: "ARTIFACTORY_TOKEN"))
+
+    def publishAgent = j
+        .agent("generic.CommandLineAgent")
+        .setName("Publish trino-server.tar.gz to Artifactory")
+        .inside(publishEnv)
+        .setPublishCommand("""
+            curl -v -u \$ARTIFACTORY_USERNAME:\$ARTIFACTORY_TOKEN -X PUT
+                https://artprod.dev.bloomberg.com/artifactory/bb-yum-dataops-local/prestosql/release/trino-server-\$VERSION.tar.gz
+                -T bloomberg/datalake-build/target/trino-server-\$VERSION.tar.gz
+            && curl -v -u \$ARTIFACTORY_USERNAME:\$ARTIFACTORY_TOKEN -X PUT
+                https://artprod.dev.bloomberg.com/artifactory/bb-yum-dataops-local/prestosql/release/trino-cli-\$VERSION-executable.jar
+                -T client/trino-cli/target/trino-cli-\$VERSION-executable.jar
+            && curl -v -u \$ARTIFACTORY_USERNAME:\$ARTIFACTORY_TOKEN -X PUT
+                https://artprod.dev.bloomberg.com/artifactory/bb-yum-dataops-local/prestosql/release/trino-jdbc-\$VERSION.jar
+                -T client/trino-jdbc/target/trino-jdbc-\$VERSION.jar
+        """.stripIndent().replace("\n", " "))
+
+    j.workflow("SimpleFlow")
+        .setReleaseBranch("475_blp")
+        .infoUsing(infoMavenAgent)
+        .testUsing(preTestAgent)
+        .testUsingParallel([testBloombergModulesAgent, testTrinoMainAgent, testOpaPluginAgent])
+        .buildUsing(buildMavenAgent)
+        .publishUsing(publishAgent)
+        .setTestResultsPattern("**/surefire-reports/*.xml")
+        .start()
+}

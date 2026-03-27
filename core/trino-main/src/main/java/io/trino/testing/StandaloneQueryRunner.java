@@ -242,6 +242,12 @@ public final class StandaloneQueryRunner
     }
 
     @Override
+    public TestingUserAttributeProviderManager getUserAttributeProvider()
+    {
+        return server.getUserAttributeProvider();
+    }
+
+    @Override
     public TestingAccessControlManager getAccessControl()
     {
         return server.getAccessControl();

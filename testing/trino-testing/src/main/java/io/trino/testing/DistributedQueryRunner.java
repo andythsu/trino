@@ -500,6 +500,12 @@ public final class DistributedQueryRunner
         return getCoordinator().getGroupProvider();
     }
 
+    @Override
+    public TestingUserAttributeProviderManager getUserAttributeProvider()
+    {
+        return getCoordinator().getUserAttributeProvider();
+    }
+
     public SessionPropertyDefaults getSessionPropertyDefaults()
     {
         return getCoordinator().getSessionPropertyDefaults();

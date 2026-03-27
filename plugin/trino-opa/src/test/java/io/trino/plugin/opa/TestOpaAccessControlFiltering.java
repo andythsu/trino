@@ -68,30 +68,30 @@ final class TestOpaAccessControlFiltering
         assertThat(result).containsExactly(userOne);
 
         Set<String> expectedRequests = ImmutableSet.<String>builder()
-                .add(
-                        """
-                        {
-                            "operation": "FilterViewQueryOwnedBy",
-                            "resource": {
-                                "user": {
-                                    "user": "user-one",
-                                    "groups": []
-                                }
+                .add("""
+                    {
+                        "operation": "FilterViewQueryOwnedBy",
+                        "resource": {
+                            "user": {
+                                "user": "user-one",
+                                "groups": [],
+                                "userAttributes": {}
                             }
                         }
-                        """)
-                .add(
-                        """
-                        {
-                            "operation": "FilterViewQueryOwnedBy",
-                            "resource": {
-                                "user": {
-                                    "user": "user-two",
-                                    "groups": []
-                                }
+                    }
+                    """)
+                .add("""
+                    {
+                        "operation": "FilterViewQueryOwnedBy",
+                        "resource": {
+                            "user": {
+                                "user": "user-two",
+                                "groups": [],
+                                "userAttributes": {}
                             }
                         }
-                        """)
+                    }
+                    """)
                 .build();
         assertStringRequestsEqual(expectedRequests, mockClient.getRequests(), "/input/action");
     }

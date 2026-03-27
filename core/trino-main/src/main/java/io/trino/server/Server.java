@@ -48,6 +48,7 @@ import io.trino.node.NodeManagerModule;
 import io.trino.security.AccessControlManager;
 import io.trino.security.AccessControlModule;
 import io.trino.security.GroupProviderManager;
+import io.trino.security.UserAttributeProviderManager;
 import io.trino.server.protocol.spooling.SpoolingManagerRegistry;
 import io.trino.server.security.CertificateAuthenticatorManager;
 import io.trino.server.security.HeaderAuthenticatorManager;
@@ -142,6 +143,7 @@ public class Server
             injector.getInstance(Key.get(new TypeLiteral<Optional<PasswordAuthenticatorManager>>() {}))
                     .ifPresent(PasswordAuthenticatorManager::loadPasswordAuthenticator);
             injector.getInstance(GroupProviderManager.class).loadConfiguredGroupProvider();
+            injector.getInstance(UserAttributeProviderManager.class).loadConfiguredAttributeProvider();
             injector.getInstance(ExchangeManagerRegistry.class).loadExchangeManager();
             injector.getInstance(SpoolingManagerRegistry.class).loadSpoolingManager();
             injector.getInstance(CertificateAuthenticatorManager.class).loadCertificateAuthenticator();

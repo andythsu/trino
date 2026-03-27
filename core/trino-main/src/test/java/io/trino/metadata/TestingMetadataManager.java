@@ -25,6 +25,7 @@ import io.trino.sql.parser.SqlParser;
 import io.trino.transaction.TransactionManager;
 import io.trino.type.BlockTypeOperators;
 
+import java.util.Map;
 import java.util.Set;
 
 import static io.trino.metadata.CatalogManager.NO_CATALOGS;
@@ -101,7 +102,7 @@ public final class TestingMetadataManager
             if (languageFunctionManager == null) {
                 BlockEncodingSerde blockEncodingSerde = new InternalBlockEncodingSerde(TESTING_BLOCK_ENCODING_MANAGER, typeManager);
                 LanguageFunctionEngineManager engineManager = new LanguageFunctionEngineManager();
-                languageFunctionManager = new LanguageFunctionManager(new SqlParser(), typeManager, _ -> ImmutableSet.of(), blockEncodingSerde, engineManager);
+                languageFunctionManager = new LanguageFunctionManager(new SqlParser(), typeManager, _ -> ImmutableSet.of(), blockEncodingSerde, engineManager, (user, principal) -> Map.of());
             }
 
             TableFunctionRegistry tableFunctionRegistry = new TableFunctionRegistry(_ -> new CatalogTableFunctions(ImmutableList.of()));

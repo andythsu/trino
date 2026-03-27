@@ -158,26 +158,26 @@ public class HttpEventListener
                             {
                                 verify(result != null);
 
-                                if (shouldRetry(result)) {
-                                    if (attempt < retryCount) {
-                                        Duration nextDelay = nextDelay(delay);
-                                        int nextAttempt = attempt + 1;
-
-                                        log.warn("QueryId = \"%s\", attempt = %d/%d, URL = %s | Ingest server responded with code %d, will retry after approximately %d seconds",
-                                                queryId, attempt + 1, retryCount + 1, request.getUri().toString(),
-                                                result.getStatusCode(), nextDelay.roundTo(TimeUnit.SECONDS));
-
-                                        attemptToSend(request, nextAttempt, nextDelay, queryId);
-                                    }
-                                    else {
-                                        log.error("QueryId = \"%s\", attempt = %d/%d, URL = %s | Ingest server responded with code %d, fatal error",
-                                                queryId, attempt + 1, retryCount + 1, request.getUri().toString(),
-                                                result.getStatusCode());
-                                    }
-                                }
-                                else {
+                                if (isSuccessful(result)) {
                                     log.debug("QueryId = \"%s\", attempt = %d/%d, URL = %s | Query event delivered successfully",
                                             queryId, attempt + 1, retryCount + 1, request.getUri().toString());
+                                    return;
+                                }
+
+                                if (shouldRetry(result) && attempt < retryCount) {
+                                    Duration nextDelay = nextDelay(delay);
+                                    int nextAttempt = attempt + 1;
+
+                                    log.warn("QueryId = \"%s\", attempt = %d/%d, URL = %s | Ingest server responded with code %d, will retry after approximately %d seconds",
+                                            queryId, attempt + 1, retryCount + 1, request.getUri().toString(),
+                                            result.getStatusCode(), nextDelay.roundTo(TimeUnit.SECONDS));
+
+                                    attemptToSend(request, nextAttempt, nextDelay, queryId);
+                                }
+                                else {
+                                    log.error("QueryId = \"%s\", attempt = %d/%d, URL = %s | Ingest server responded with code %d, fatal error",
+                                            queryId, attempt + 1, retryCount + 1, request.getUri().toString(),
+                                            result.getStatusCode());
                                 }
                             }
 
@@ -201,6 +201,13 @@ public class HttpEventListener
                             }
                         }, executor),
                 (long) delay.getValue(), delay.getUnit());
+    }
+
+    private boolean isSuccessful(StatusResponse response)
+    {
+        int statusCode = response.getStatusCode();
+
+        return 200 <= statusCode && statusCode < 300;
     }
 
     private boolean shouldRetry(StatusResponse response)

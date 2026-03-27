@@ -16,7 +16,6 @@ package io.trino.plugin.hive.procedure;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import io.trino.filesystem.Location;
@@ -42,13 +41,14 @@ import io.trino.spi.procedure.Procedure.Argument;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import static com.google.common.base.Verify.verify;
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
-import static com.google.common.collect.Sets.difference;
 import static io.trino.plugin.base.util.Procedures.checkProcedureArgument;
 import static io.trino.plugin.hive.HiveErrorCode.HIVE_FILESYSTEM_ERROR;
 import static io.trino.plugin.hive.HiveMetadata.TRINO_QUERY_ID_NAME;
@@ -143,28 +143,21 @@ public class SyncPartitionMetadataProcedure
                 accessControl.checkCanDeleteFromTable(null, new SchemaTableName(schemaName, tableName));
             }
 
-            Set<String> partitionNamesInMetastore = metastore.getPartitionNames(schemaName, tableName)
+            Location tableLocation = Location.of(table.getStorage().getLocation());
+
+            Set<String> partitionsInMetastore = metastore.getPartitionNames(schemaName, tableName)
                     .map(ImmutableSet::copyOf)
                     .orElseThrow(() -> new TableNotFoundException(schemaTableName));
-            String tableStorageLocation = table.getStorage().getLocation();
-            Set<String> canonicalPartitionNamesInMetastore = partitionNamesInMetastore;
-            if (!caseSensitive) {
-                canonicalPartitionNamesInMetastore = Lists.partition(ImmutableList.copyOf(partitionNamesInMetastore), maxPartitionBatchSize).stream()
-                        .flatMap(partitionNames -> metastore.getPartitionsByNames(schemaName, tableName, partitionNames).values().stream())
-                        .flatMap(Optional::stream) // disregard partitions which disappeared in the meantime since listing the partition names
-                        // Disregard the partitions which do not have a canonical Hive location (e.g. `ALTER TABLE ... ADD PARTITION (...) LOCATION '...'`)
-                        .flatMap(partition -> getCanonicalPartitionName(partition, table.getPartitionColumns(), tableStorageLocation).stream())
-                        .collect(toImmutableSet());
-            }
-            Set<String> partitionsInFileSystem = listPartitions(fileSystemFactory.create(session), Location.of(tableStorageLocation), table.getPartitionColumns(), caseSensitive);
+            Set<String> partitionsInFileSystem = listPartitions(fileSystemFactory.create(session), tableLocation, table.getPartitionColumns(), caseSensitive);
 
-            // partitions in file system but not in metastore
-            Set<String> partitionsToAdd = difference(partitionsInFileSystem, canonicalPartitionNamesInMetastore);
+            // Partition information in the metastore will have lowercase partition names but the partition values can be of any case
+            // Filesystem is completely case sensitive.
+            // Examples paths:
+            //  HIVE: indexticker=LUTLTRUU Index/priceyear=2023/pricemonth=6
+            //    S3: indexTicker=LUTLTRUU Index/priceYear=2023/priceMonth=6
+            Map<String, Set<String>> mapdiff = differenceIgnoreCase(partitionsInMetastore, partitionsInFileSystem);
 
-            // partitions in metastore but not in file system
-            Set<String> partitionsToDrop = difference(canonicalPartitionNamesInMetastore, partitionsInFileSystem);
-
-            syncPartitions(partitionsToAdd, partitionsToDrop, syncMode, metastore, session, table);
+            syncPartitions(mapdiff.get("addmetastore"), mapdiff.get("removemetastore"), syncMode, metastore, session, table);
         }
     }
 
@@ -224,6 +217,69 @@ public class SyncPartitionMetadataProcedure
             result.addAll(doListPartitions(fileSystem, location, partitionColumns, depth - 1, caseSensitive, current));
         }
         return result.build();
+    }
+
+    private static Map<String, Set<String>> differenceIgnoreCase(Set<String> metastore, Set<String> s3filesystem)
+    {
+        Map<String, Set<String>> mapReturn = new HashMap<>();
+
+        if (metastore.isEmpty()) {
+            mapReturn.put("addmetastore", s3filesystem);
+            mapReturn.put("removemetastore", new HashSet<>());
+        }
+        else {
+            mapReturn.put("addmetastore", new HashSet<>());
+            mapReturn.put("removemetastore", new HashSet<>());
+            Map<String, String> s3Map = new HashMap<>();
+            Set<String> metastoreHash = new HashSet<>();
+            for (String s3Path : s3filesystem) {
+                s3Map.put(lowercaseKeysBeforeEquals(s3Path), s3Path);
+            }
+
+            for (String meta : metastore) {
+                metastoreHash.add(meta);
+            }
+
+            for (String meta : metastore) {
+                if (!s3Map.containsKey(meta)) {
+                    mapReturn.get("removemetastore").add(meta);
+                }
+            }
+
+            for (Map.Entry<String, String> entry : s3Map.entrySet()) {
+                if (!metastoreHash.contains(entry.getKey())) {
+                    mapReturn.get("addmetastore").add(entry.getValue());
+                }
+            }
+        }
+
+        return mapReturn;
+    }
+
+    private static String lowercaseKeysBeforeEquals(String input)
+    {
+        StringBuilder result = new StringBuilder();
+
+        String[] substrings = input.split("/");
+        for (String substring : substrings) {
+            String[] keyValue = substring.split("=");
+            if (keyValue.length == 2) {
+                result.append(keyValue[0].toLowerCase(ENGLISH))
+                        .append("=")
+                        .append(keyValue[1]);
+            }
+            else {
+                result.append(substring);
+            }
+            result.append("/");
+        }
+
+        // Remove the trailing '/'
+        if (result.length() > 0) {
+            result.deleteCharAt(result.length() - 1);
+        }
+
+        return result.toString();
     }
 
     private static Set<Location> listDirectories(TrinoFileSystem fileSystem, Location directory)

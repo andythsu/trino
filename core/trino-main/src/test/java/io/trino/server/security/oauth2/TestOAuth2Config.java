@@ -50,7 +50,11 @@ public class TestOAuth2Config
                 .setUserMappingPattern(null)
                 .setUserMappingFile(null)
                 .setEnableRefreshTokens(false)
-                .setEnableDiscovery(true));
+                .setEnableDiscovery(true)
+                .setJWKRequestRateLimit(null)
+                .setjwkSetTimeToLive(null)
+                .setJWKCashRefreshTimeout(null)
+                .setjwkRefreshAheadCache(null));
     }
 
     @Test
@@ -73,6 +77,10 @@ public class TestOAuth2Config
                 .put("http-server.authentication.oauth2.user-mapping.file", userMappingFile.toString())
                 .put("http-server.authentication.oauth2.refresh-tokens", "true")
                 .put("http-server.authentication.oauth2.oidc.discovery", "false")
+                .put("http-server.authentication.oauth2.jwk-request-rate-limit", "42s")
+                .put("http-server.authentication.oauth2.jwkset-time-to-live", "41s")
+                .put("http-server.authentication.oauth2.jwkset-cache-refresh-timeout", "40s")
+                .put("http-server.authentication.oauth2.jwk-refresh-ahead-of-cache-time", "39s")
                 .buildOrThrow();
 
         OAuth2Config expected = new OAuth2Config()
@@ -89,7 +97,11 @@ public class TestOAuth2Config
                 .setUserMappingPattern("(.*)@something")
                 .setUserMappingFile(userMappingFile.toFile())
                 .setEnableRefreshTokens(true)
-                .setEnableDiscovery(false);
+                .setEnableDiscovery(false)
+                .setJWKRequestRateLimit(new Duration(42, SECONDS))
+                .setjwkSetTimeToLive(new Duration(41, SECONDS))
+                .setJWKCashRefreshTimeout(new Duration(40, SECONDS))
+                .setjwkRefreshAheadCache(new Duration(39, SECONDS));
 
         assertFullMapping(properties, expected);
     }

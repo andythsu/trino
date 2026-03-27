@@ -42,6 +42,7 @@ import io.trino.spi.function.ScalarFunctionImplementation;
 import io.trino.spi.function.SchemaFunctionName;
 import io.trino.spi.security.GroupProvider;
 import io.trino.spi.security.Identity;
+import io.trino.spi.security.UserAttributeProvider;
 import io.trino.spi.session.PropertyMetadata;
 import io.trino.spi.type.Type;
 import io.trino.spi.type.TypeId;
@@ -108,6 +109,7 @@ public class LanguageFunctionManager
     private SqlRoutineAnalyzer analyzer;
     private SqlRoutinePlanner planner;
     private final Map<QueryId, QueryFunctions> queryFunctions = new ConcurrentHashMap<>();
+    private final UserAttributeProvider userAttributeProvider;
 
     @Inject
     public LanguageFunctionManager(
@@ -115,11 +117,13 @@ public class LanguageFunctionManager
             TypeManager typeManager,
             GroupProvider groupProvider,
             BlockEncodingSerde blockEncodingSerde,
-            LanguageFunctionEngineManager engineManager)
+            LanguageFunctionEngineManager engineManager,
+            UserAttributeProvider userAttributeProvider)
     {
         this.parser = requireNonNull(parser, "parser is null");
         this.typeManager = requireNonNull(typeManager, "typeManager is null");
         this.groupProvider = requireNonNull(groupProvider, "groupProvider is null");
+        this.userAttributeProvider = requireNonNull(userAttributeProvider, "userAttributesProvider is null");
         this.blockEncodingSerde = requireNonNull(blockEncodingSerde, "blockEncodingSerde is null");
         this.engineManager = requireNonNull(engineManager, "engineManager is null");
     }
@@ -634,6 +638,7 @@ public class LanguageFunctionManager
 
                 Identity newIdentity = Identity.from(identity)
                         .withGroups(groupProvider.getGroups(identity.getUser()))
+                        .withAdditionalUserAttributes(userAttributeProvider.getUserAttributes(identity.getUser(), identity.getPrincipal()))
                         .build();
 
                 Session functionSession = createFunctionSession(newIdentity);

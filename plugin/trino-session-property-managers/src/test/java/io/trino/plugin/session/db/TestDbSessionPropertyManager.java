@@ -19,6 +19,7 @@ import io.trino.plugin.session.AbstractTestSessionPropertyManager;
 import io.trino.plugin.session.SessionMatchSpec;
 import io.trino.spi.resourcegroups.ResourceGroupId;
 import io.trino.spi.session.SessionConfigurationContext;
+import org.jdbi.v3.core.Jdbi;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -31,6 +32,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
+import static io.trino.plugin.session.db.util.SessionPropertiesDaoUtil.CLIENT_TAGS_TABLE;
+import static io.trino.plugin.session.db.util.SessionPropertiesDaoUtil.PROPERTIES_TABLE;
+import static io.trino.plugin.session.db.util.SessionPropertiesDaoUtil.SESSION_SPECS_TABLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
@@ -44,6 +48,7 @@ public class TestDbSessionPropertyManager
     private SessionPropertiesDao dao;
     private DbSessionPropertyManager manager;
     private RefreshingDbSpecsProvider specsProvider;
+    private Jdbi jdbi;
 
     private TestingMySqlContainer mysqlContainer;
 
@@ -60,7 +65,9 @@ public class TestDbSessionPropertyManager
                 .setUsername(mysqlContainer.getUsername())
                 .setPassword(mysqlContainer.getPassword());
 
-        SessionPropertiesDaoProvider daoProvider = new SessionPropertiesDaoProvider(config);
+        FlywayMigration.migrate(config);
+        jdbi = DbSessionPropertyManagerModule.getJdbi(config);
+        SessionPropertiesDaoProvider daoProvider = new SessionPropertiesDaoProvider(config, jdbi);
         dao = daoProvider.get();
     }
 
@@ -74,9 +81,14 @@ public class TestDbSessionPropertyManager
     @AfterEach
     public void teardown()
     {
-        dao.dropSessionPropertiesTable();
-        dao.dropSessionClientTagsTable();
-        dao.dropSessionSpecsTable();
+        jdbi.useHandle(h -> {
+            h.execute("DROP TABLE IF EXISTS " + PROPERTIES_TABLE);
+            h.execute("DROP TABLE IF EXISTS " + CLIENT_TAGS_TABLE);
+            h.execute("DROP TABLE IF EXISTS " + SESSION_SPECS_TABLE);
+            /*********** Bloomberg customization — drop Flyway history so re-migration recreates tables ***********/
+            h.execute("DROP TABLE IF EXISTS flyway_schema_history");
+        });
+        FlywayMigration.migrate(config);
     }
 
     @AfterAll
@@ -110,7 +122,7 @@ public class TestDbSessionPropertyManager
             String queryType = spec.getQueryType().orElse(null);
             String resourceGroupRegex = spec.getResourceGroupRegex().map(Pattern::pattern).orElse(null);
 
-            dao.insertSpecRow(i, userRegex, sourceRegex, queryType, resourceGroupRegex, 0);
+            dao.insertSpecRow(i, userRegex, null, sourceRegex, queryType, resourceGroupRegex, 0);
 
             for (String tag : spec.getClientTags()) {
                 dao.insertClientTag(i, tag);
@@ -127,10 +139,10 @@ public class TestDbSessionPropertyManager
     @Test
     public void testSessionProperties()
     {
-        dao.insertSpecRow(1, "foo.*", null, null, null, 0);
+        dao.insertSpecRow(1, "foo.*", null, null, null, null, 0);
         dao.insertSessionProperty(1, "prop_1", "val_1");
 
-        dao.insertSpecRow(2, ".*", "bar.*", null, null, 0);
+        dao.insertSpecRow(2, ".*", null, "bar.*", null, null, 0);
         dao.insertSessionProperty(2, "prop_2", "val_2");
 
         specsProvider.refresh();
@@ -173,19 +185,19 @@ public class TestDbSessionPropertyManager
     {
         SessionConfigurationContext context1 = new SessionConfigurationContext("foo123", Optional.of("src1"), ImmutableSet.of(), Optional.empty(), TEST_RG);
 
-        dao.insertSpecRow(1, "foo.*", null, null, null, 0);
+        dao.insertSpecRow(1, "foo.*", null, null, null, null, 0);
         dao.insertSessionProperty(1, "prop_1", "val_1");
-        dao.insertSpecRow(2, ".*", "bar.*", null, null, 0);
+        dao.insertSpecRow(2, ".*", null, "bar.*", null, null, 0);
         dao.insertSessionProperty(2, "prop_2", "val_2");
 
         specsProvider.refresh();
         long failuresBefore = specsProvider.getDbLoadFailures().getTotalCount();
 
-        dao.insertSpecRow(3, "bar", null, null, null, 0);
+        dao.insertSpecRow(3, "bar", null, null, null, null, 0);
         dao.insertSessionProperty(3, "prop_3", "val_3");
 
         // Simulating bad database operation
-        dao.dropSessionPropertiesTable();
+        jdbi.useHandle(h -> h.execute("DROP TABLE IF EXISTS " + PROPERTIES_TABLE));
 
         specsProvider.refresh();
         long failuresAfter = specsProvider.getDbLoadFailures().getTotalCount();
@@ -203,16 +215,16 @@ public class TestDbSessionPropertyManager
     @Test
     public void testOrderingOfSpecs()
     {
-        dao.insertSpecRow(1, "foo", null, null, null, 2);
+        dao.insertSpecRow(1, "foo", null, null, null, null, 2);
         dao.insertSessionProperty(1, "prop_1", "val_1_2");
         dao.insertSessionProperty(1, "prop_2", "val_2_2");
 
-        dao.insertSpecRow(2, "foo", null, null, null, 1);
+        dao.insertSpecRow(2, "foo", null, null, null, null, 1);
         dao.insertSessionProperty(2, "prop_1", "val_1_1");
         dao.insertSessionProperty(2, "prop_2", "val_2_1");
         dao.insertSessionProperty(2, "prop_3", "val_3_1");
 
-        dao.insertSpecRow(3, "foo", null, null, null, 3);
+        dao.insertSpecRow(3, "foo", null, null, null, null, 3);
         dao.insertSessionProperty(3, "prop_1", "val_1_3");
 
         specsProvider.refresh();
@@ -228,11 +240,11 @@ public class TestDbSessionPropertyManager
     @Test
     public void testCatalogSessionProperties()
     {
-        dao.insertSpecRow(1, ".*", null, null, null, 0);
+        dao.insertSpecRow(1, ".*", null, null, null, null, 0);
         dao.insertSessionProperty(1, "catalog_1.prop_1", "val_1");
         dao.insertSessionProperty(1, "catalog_1.prop_2", "val_2");
 
-        dao.insertSpecRow(2, ".*", null, null, null, 1);
+        dao.insertSpecRow(2, ".*", null, null, null, null, 1);
         dao.insertSessionProperty(2, "catalog_1.prop_1", "val_1_bis");
         dao.insertSessionProperty(2, "catalog_1.prop_3", "val_3");
 

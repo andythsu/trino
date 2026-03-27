@@ -23,23 +23,36 @@ import static java.util.Objects.requireNonNull;
 public final class SessionConfigurationContext
 {
     private final String user;
+    private final Set<String> userGroups;
     private final Optional<String> source;
     private final Set<String> clientTags;
     private final Optional<String> queryType;
     private final ResourceGroupId resourceGroupId;
 
-    public SessionConfigurationContext(String user, Optional<String> source, Set<String> clientTags, Optional<String> queryType, ResourceGroupId resourceGroupId)
+    public SessionConfigurationContext(String user, Optional<String> source, Set<String> clientTags, Optional<String> queryType, ResourceGroupId resourceGroupId, Set<String> userGroups)
     {
         this.user = requireNonNull(user, "user is null");
         this.source = requireNonNull(source, "source is null");
         this.clientTags = Set.copyOf(requireNonNull(clientTags, "clientTags is null"));
         this.queryType = requireNonNull(queryType, "queryType is null");
         this.resourceGroupId = requireNonNull(resourceGroupId, "resourceGroupId");
+        this.userGroups = requireNonNull(userGroups, "userGroups is null");
+    }
+
+    @Deprecated
+    public SessionConfigurationContext(String user, Optional<String> source, Set<String> clientTags, Optional<String> queryType, ResourceGroupId resourceGroupId)
+    {
+        this(user, source, clientTags, queryType, resourceGroupId, Set.of());
     }
 
     public String getUser()
     {
         return user;
+    }
+
+    public Set<String> getUserGroups()
+    {
+        return userGroups;
     }
 
     public Optional<String> getSource()

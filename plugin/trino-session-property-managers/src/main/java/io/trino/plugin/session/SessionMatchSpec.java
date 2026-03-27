@@ -38,15 +38,29 @@ import static java.util.Objects.requireNonNull;
 public class SessionMatchSpec
 {
     private final Optional<Pattern> userRegex;
+    private final Optional<Pattern> userGroupRegex;
     private final Optional<Pattern> sourceRegex;
     private final Set<String> clientTags;
     private final Optional<String> queryType;
     private final Optional<Pattern> resourceGroupRegex;
     private final Map<String, String> sessionProperties;
 
+    @Deprecated
+    public SessionMatchSpec(
+            Optional<Pattern> userRegex,
+            Optional<Pattern> sourceRegex,
+            Optional<List<String>> clientTags,
+            Optional<String> queryType,
+            Optional<Pattern> resourceGroupRegex,
+            Map<String, String> sessionProperties)
+    {
+        this(userRegex, Optional.empty(), sourceRegex, clientTags, queryType, resourceGroupRegex, sessionProperties);
+    }
+
     @JsonCreator
     public SessionMatchSpec(
             @JsonProperty("user") Optional<Pattern> userRegex,
+            @JsonProperty("userGroup") Optional<Pattern> userGroupRegex,
             @JsonProperty("source") Optional<Pattern> sourceRegex,
             @JsonProperty("clientTags") Optional<List<String>> clientTags,
             @JsonProperty("queryType") Optional<String> queryType,
@@ -54,6 +68,7 @@ public class SessionMatchSpec
             @JsonProperty("sessionProperties") Map<String, String> sessionProperties)
     {
         this.userRegex = requireNonNull(userRegex, "userRegex is null");
+        this.userGroupRegex = requireNonNull(userGroupRegex, "userGroupRegex is null");
         this.sourceRegex = requireNonNull(sourceRegex, "sourceRegex is null");
         requireNonNull(clientTags, "clientTags is null");
         this.clientTags = ImmutableSet.copyOf(clientTags.orElse(ImmutableList.of()));
@@ -66,6 +81,9 @@ public class SessionMatchSpec
     public Map<String, String> match(SessionConfigurationContext context)
     {
         if (userRegex.isPresent() && !userRegex.get().matcher(context.getUser()).matches()) {
+            return ImmutableMap.of();
+        }
+        if (userGroupRegex.isPresent() && context.getUserGroups().stream().noneMatch(g -> userGroupRegex.get().matcher(g).matches())) {
             return ImmutableMap.of();
         }
         if (sourceRegex.isPresent()) {
@@ -96,6 +114,12 @@ public class SessionMatchSpec
     public Optional<Pattern> getUserRegex()
     {
         return userRegex;
+    }
+
+    @JsonProperty("userGroup")
+    public Optional<Pattern> getUserGroupRegex()
+    {
+        return userGroupRegex;
     }
 
     @JsonProperty("source")
@@ -141,6 +165,7 @@ public class SessionMatchSpec
 
             return new SessionMatchSpec(
                     Optional.ofNullable(resultSet.getString("user_regex")).map(Pattern::compile),
+                    Optional.ofNullable(resultSet.getString("user_group_regex")).map(Pattern::compile),
                     Optional.ofNullable(resultSet.getString("source_regex")).map(Pattern::compile),
                     Optional.ofNullable(resultSet.getString("client_tags")).map(tag -> Splitter.on(",").splitToList(tag)),
                     Optional.ofNullable(resultSet.getString("query_type")),

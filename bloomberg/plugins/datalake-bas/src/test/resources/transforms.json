@@ -1,0 +1,680 @@
+[
+    {
+        "given": {
+            "a": {
+                "b": {
+                    "c": "x"
+                },
+                "d": [
+                    1,
+                    2,
+                    3
+                ]
+            },
+            "e": 4
+        },
+        "transformations": [],
+        "expected": [
+            {
+                "a.b.c": "x",
+                "a.d": [
+                    1,
+                    2,
+                    3
+                ],
+                "e": 4
+            }
+        ]
+    },
+    {
+        "given": {
+            "a": [
+                {
+                    "b": 1,
+                    "c": 2
+                },
+                {
+                    "b": 3,
+                    "c": 4
+                }
+            ]
+        },
+        "transformations": [],
+        "expected": [
+            {
+                "a": [
+                    {
+                        "b": 1,
+                        "c": 2
+                    },
+                    {
+                        "b": 3,
+                        "c": 4
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "given": {
+            "a": [
+                {
+                    "b": {
+                        "c": "x"
+                    }
+                }
+            ]
+        },
+        "transformations": [],
+        "expected": [
+            {
+                "a": [
+                    {
+                        "b.c": "x"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "given": {
+            "array": [
+                [
+                    {
+                        "a": {
+                            "b": "v1"
+                        }
+                    }
+                ]
+            ]
+        },
+        "transformations": [],
+        "expected": [
+            {
+                "array": [
+                    [
+                        {
+                            "a.b": "v1"
+                        }
+                    ]
+                ]
+            }
+        ]
+    },
+    {
+        "given": {
+            "a": 1,
+            "b": null,
+            "c": {
+                "d": 2,
+                "e": null
+            }
+        },
+        "transformations": [],
+        "expected": [
+            {
+                "a": 1,
+                "c.d": 2
+            }
+        ]
+    },
+    {
+        "given": {
+            "a": [
+                {
+                    "c": 1
+                },
+                2,
+                null
+            ]
+        },
+        "transformations": [],
+        "expected": [
+            {
+                "a": [
+                    {
+                        "c": 1
+                    },
+                    2,
+                    null
+                ]
+            }
+        ]
+    },
+    {
+        "given": {
+            "array": [
+                1,
+                2,
+                3
+            ]
+        },
+        "transformations": [
+            {
+                "type": "unnest",
+                "key": "array"
+            }
+        ],
+        "expected": [
+            {
+                "array": 1
+            },
+            {
+                "array": 2
+            },
+            {
+                "array": 3
+            }
+        ]
+    },
+    {
+        "given": {
+            "array": [
+                {
+                    "a": "v1"
+                },
+                {
+                    "a": "v2"
+                }
+            ]
+        },
+        "transformations": [
+            {
+                "type": "unnest",
+                "key": "array"
+            }
+        ],
+        "expected": [
+            {
+                "array.a": "v1"
+            },
+            {
+                "array.a": "v2"
+            }
+        ]
+    },
+    {
+        "given": {
+            "array": [
+                {
+                    "a": "v1"
+                },
+                {
+                    "a": "v2"
+                }
+            ],
+            "array2": [
+                {
+                    "b": "v3"
+                },
+                {
+                    "b": "v4"
+                }
+            ]
+        },
+        "transformations": [
+            {
+                "type": "unnest",
+                "key": "array"
+            },
+            {
+                "type": "unnest",
+                "key": "array2"
+            }
+        ],
+        "expected": [
+            {
+                "array.a": "v1",
+                "array2.b": "v3"
+            },
+            {
+                "array.a": "v1",
+                "array2.b": "v4"
+            },
+            {
+                "array.a": "v2",
+                "array2.b": "v3"
+            },
+            {
+                "array.a": "v2",
+                "array2.b": "v4"
+            }
+        ]
+    },
+    {
+        "given": {
+            "array": [
+                {
+                    "a": "v1",
+                    "array2": [
+                        {
+                            "b": "v3"
+                        },
+                        {
+                            "b": "v4"
+                        }
+                    ]
+                },
+                {
+                    "a": "v2",
+                    "array2": []
+                }
+            ]
+        },
+        "transformations": [
+            {
+                "type": "unnest",
+                "key": "array"
+            },
+            {
+                "type": "unnest",
+                "key": "array.array2"
+            }
+        ],
+        "expected": [
+            {
+                "array.a": "v1",
+                "array.array2.b": "v3"
+            },
+            {
+                "array.a": "v1",
+                "array.array2.b": "v4"
+            },
+            {
+                "array.a": "v2"
+            }
+        ]
+    },
+    {
+        "given": {
+            "array": 1
+        },
+        "transformations": [
+            {
+                "type": "unnest",
+                "key": "array"
+            }
+        ],
+        "expected": [
+            {
+                "array": 1
+            }
+        ]
+    },
+    {
+        "given": {
+            "x": "y"
+        },
+        "transformations": [
+            {
+                "type": "unnest",
+                "key": "array"
+            }
+        ],
+        "expected": [
+            {
+                "x": "y"
+            }
+        ]
+    },
+    {
+        "given": {
+            "array": [
+                {
+                    "a": "v1"
+                },
+                {
+                    "a": "v2"
+                }
+            ],
+            "array2": [
+                {
+                    "b": "v3"
+                },
+                {
+                    "b": "v4"
+                }
+            ]
+        },
+        "transformations": [
+            {
+                "type": "zip",
+                "zippers": [
+                    {
+                        "type": "singleKey",
+                        "key": "array"
+                    },
+                    {
+                        "type": "singleKey",
+                        "key": "array2"
+                    }
+                ]
+            }
+        ],
+        "expected": [
+            {
+                "array.a": "v1",
+                "array2.b": "v3"
+            },
+            {
+                "array.a": "v2",
+                "array2.b": "v4"
+            }
+        ]
+    },
+    {
+        "given": {
+            "data1": [
+                1,
+                3
+            ],
+            "data2": [
+                4
+            ]
+        },
+        "transformations": [
+            {
+                "type": "zip",
+                "zippers": [
+                    {
+                        "type": "singleKey",
+                        "key": "data1"
+                    },
+                    {
+                        "type": "singleKey",
+                        "key": "data2"
+                    }
+                ]
+            }
+        ],
+        "expected": [
+            {
+                "data1": 1,
+                "data2": 4
+            },
+            {
+                "data1": 3
+            }
+        ]
+    },
+    {
+        "given": {
+            "data1": [1, 2, 3],
+            "data2": [4, 5, 6]
+        },
+        "transformations": [
+            {
+                "type": "zip",
+                "zippers": [
+                    {
+                        "type": "list",
+                        "pattern": "data[0-9]+",
+                        "key": "data"
+                    }
+                ]
+            }
+        ],
+        "expected": [
+            {
+                "data": [1, 4]
+            },
+            {
+                "data": [2, 5]
+            },
+            {
+                "data": [3, 6]
+            }
+        ]
+    },
+    {
+        "given": {
+            "dates": [2020, 2021, 2022],
+            "fields": [
+                {
+                    "values": [1, 2, 3]
+                },
+                {
+                    "values": [4, 5, 6]
+                }
+            ]
+        },
+        "transformations": [
+            {
+                "type": "spread",
+                "key": "fields"
+            },
+            {
+                "type": "zip",
+                "zippers": [
+                    {
+                        "type": "singleKey",
+                        "key": "dates"
+                    },
+                    {
+                        "type": "list",
+                        "pattern": "fields\\[[0-9]+\\]",
+                        "key": "fields"
+                    }
+                ]
+            }
+        ],
+        "expected": [
+            {
+                "dates": 2020,
+                "fields": [1, 4]
+            },
+            {
+                "dates": 2021,
+                "fields": [2, 5]
+            },
+            {
+                "dates": 2022,
+                "fields": [3, 6]
+            }
+        ]
+    },
+    {
+        "given": {
+            "array": [
+                {
+                    "a": "v1"
+                },
+                {
+                    "a": "v2"
+                }
+            ]
+        },
+        "transformations": [
+            {
+                "type": "spread",
+                "key": "array"
+            }
+        ],
+        "expected": [
+            {
+                "array[0].a": "v1",
+                "array[1].a": "v2"
+            }
+        ]
+    },
+    {
+        "given": {
+            "array": [
+                0,
+                1
+            ]
+        },
+        "transformations": [
+            {
+                "type": "spread",
+                "key": "array"
+            }
+        ],
+        "expected": [
+            {
+                "array[0]": 0,
+                "array[1]": 1
+            }
+        ]
+    },
+    {
+        "given": {
+            "array": [],
+            "x": "y"
+        },
+        "transformations": [
+            {
+                "type": "spread",
+                "key": "array"
+            }
+        ],
+        "expected": [
+            {
+                "x": "y"
+            }
+        ]
+    },
+    {
+        "given": {},
+        "transformations": [
+            {
+                "type": "spread",
+                "key": "array"
+            }
+        ],
+        "expected": [
+            {}
+        ]
+    },
+    {
+        "given": {
+            "a": {
+                "a": 1
+            },
+            "b": {
+                "a": 1
+            }
+        },
+        "transformations": [
+            {
+                "type": "rename",
+                "key": "a.a",
+                "newName": "c.a"
+            }
+        ],
+        "expected": [
+            {
+                "c.a": 1,
+                "b.a": 1
+            }
+        ]
+    },
+    {
+        "given": {
+            "array": [
+                {
+                    "a": "v1",
+                    "array2": [
+                        {
+                            "b": "v3"
+                        },
+                        {
+                            "b": "v4"
+                        }
+                    ]
+                },
+                {
+                    "a": "v2",
+                    "array2": []
+                }
+            ]
+        },
+        "transformations": [
+            {
+                "type": "unnest",
+                "key": "array"
+            },
+            {
+                "type": "unnest",
+                "key": "array.array2"
+            },
+            {
+                "type": "rename",
+                "key": "array.a",
+                "newName": "array.intermediate"
+            },
+            {
+                "type": "rename",
+                "key": "array.intermediate",
+                "newName": "array.final"
+            }
+        ],
+        "expected": [
+            {
+                "array.final": "v1",
+                "array.array2.b": "v3"
+            },
+            {
+                "array.final": "v1",
+                "array.array2.b": "v4"
+            },
+            {
+                "array.final": "v2"
+            }
+        ]
+    },
+    {
+        "given": {
+            "array": [
+                {
+                    "a": "v1",
+                    "array2": [
+                        {
+                            "b": "v3"
+                        },
+                        {
+                            "b": "v4"
+                        }
+                    ]
+                },
+                {
+                    "a": "v2",
+                    "array2": []
+                }
+            ]
+        },
+        "transformations": [
+            {
+                "type": "unnest",
+                "key": "array"
+            },
+            {
+                "type": "rename",
+                "key": "array.a",
+                "newName": "array.intermediate"
+            },
+            {
+                "type": "unnest",
+                "key": "array.array2"
+            },
+            {
+                "type": "rename",
+                "key": "array.intermediate",
+                "newName": "array.final"
+            }
+        ],
+        "expected": [
+            {
+                "array.final": "v1",
+                "array.array2.b": "v3"
+            },
+            {
+                "array.final": "v1",
+                "array.array2.b": "v4"
+            },
+            {
+                "array.final": "v2"
+            }
+        ]
+    }
+]

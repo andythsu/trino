@@ -8437,7 +8437,7 @@ public class TestAnalyzer
                         return new ConnectorTransactionHandle() {};
                     }
                 },
-                user -> ImmutableSet.of(),
+                _ -> ImmutableSet.of(),
                 new TableProceduresRegistry(CatalogServiceProvider.fail("procedures are not supported in testing analyzer")),
                 new TableFunctionRegistry(catalogName -> new CatalogTableFunctions(ImmutableList.of(
                         new TwoScalarArgumentsFunction(),
@@ -8452,7 +8452,8 @@ public class TestAnalyzer
                         new RequiredColumnsFunction()))),
                 tablePropertyManager,
                 analyzePropertyManager,
-                new TableProceduresPropertyManager(CatalogServiceProvider.fail("procedures are not supported in testing analyzer")));
+                new TableProceduresPropertyManager(CatalogServiceProvider.fail("procedures are not supported in testing analyzer")),
+                (_, _) -> ImmutableMap.of());
         AnalyzerFactory analyzerFactory = new AnalyzerFactory(statementAnalyzerFactory, statementRewrite, plannerContext.getTracer());
         return analyzerFactory.createAnalyzer(
                 session,

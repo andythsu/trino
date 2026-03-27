@@ -236,7 +236,8 @@ final class TestOpaAccessControl
                     "resource": {
                         "user": {
                             "user": "dummy-user",
-                            "groups": ["some-group"]
+                            "groups": ["some-group"],
+                            "userAttributes": {}
                         }
                     }
                 }
@@ -667,7 +668,10 @@ final class TestOpaAccessControl
                 ImmutableMap.of("opa.policy.uri", OPA_SERVER_URI.toString()),
                 Optional.of(mockClient),
                 accessControlContext);
-        Identity sampleIdentityWithGroups = Identity.forUser("test_user").withGroups(ImmutableSet.of("some_group")).build();
+        Identity sampleIdentityWithGroups = Identity.forUser("test_user")
+                .withGroups(ImmutableSet.of("some_group"))
+                .withUserAttributes(ImmutableMap.of("some-attr1", ImmutableSet.of("val11", "val12"),"some-attr2", "val2"))
+                .build();
 
         authorizer.checkCanExecuteQuery(sampleIdentityWithGroups, TEST_QUERY_ID);
 
@@ -680,7 +684,11 @@ final class TestOpaAccessControl
                     "context": {
                         "identity": {
                             "user": "test_user",
-                            "groups": ["some_group"]
+                            "groups": ["some_group"],
+                            "userAttributes": {
+                                "some-attr1": ["val11", "val12"],
+                                "some-attr2": "val2"
+                            }
                         },
                         "softwareStack": {
                             "trinoVersion": "%s"
@@ -715,7 +723,8 @@ final class TestOpaAccessControl
                     "context": {
                         "identity": {
                             "user": "test_user",
-                            "groups": ["some_group"]
+                            "groups": ["some_group"],
+                            "userAttributes": {}
                         },
                         "softwareStack": {
                             "trinoVersion": "UNKNOWN"
@@ -817,8 +826,7 @@ final class TestOpaAccessControl
                                 viewExpression.getSecurityIdentity()))
                 .containsExactlyInAnyOrderElementsOf(expectedExpressions);
 
-        String expectedRequest = String.format(
-                """
+        String expectedRequest = String.format("""
                 {
                     "operation": "GetRowFilters",
                     "resource": {
@@ -828,8 +836,7 @@ final class TestOpaAccessControl
                             "tableName": "%s"
                         }
                     }
-                }\
-                """,
+                }""",
                 TEST_COLUMN_MASKING_TABLE_NAME.getCatalogName(),
                 TEST_COLUMN_MASKING_TABLE_NAME.getSchemaTableName().getSchemaName(),
                 TEST_COLUMN_MASKING_TABLE_NAME.getSchemaTableName().getTableName());

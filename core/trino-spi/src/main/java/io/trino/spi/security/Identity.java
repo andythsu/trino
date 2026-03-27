@@ -35,6 +35,7 @@ public class Identity
     private final Set<String> enabledRoles;
     private final Map<String, SelectedRole> catalogRoles;
     private final Map<String, String> extraCredentials;
+    private final Map<String, Object> userAttributes;
     private final Optional<Runnable> onDestroy;
 
     private Identity(
@@ -44,6 +45,7 @@ public class Identity
             Set<String> enabledRoles,
             Map<String, SelectedRole> catalogRoles,
             Map<String, String> extraCredentials,
+            Map<String, Object> userAttributes,
             Optional<Runnable> onDestroy)
     {
         this.user = requireNonNull(user, "user is null");
@@ -52,6 +54,7 @@ public class Identity
         this.enabledRoles = Set.copyOf(requireNonNull(enabledRoles, "enabledRoles is null"));
         this.catalogRoles = Map.copyOf(requireNonNull(catalogRoles, "catalogRoles is null"));
         this.extraCredentials = Map.copyOf(requireNonNull(extraCredentials, "extraCredentials is null"));
+        this.userAttributes = Map.copyOf(requireNonNull(userAttributes, "userAttributes is null"));
         this.onDestroy = requireNonNull(onDestroy, "onDestroy is null");
     }
 
@@ -94,6 +97,11 @@ public class Identity
         return extraCredentials;
     }
 
+    public Map<String, Object> getUserAttributes()
+    {
+        return userAttributes;
+    }
+
     public ConnectorIdentity toConnectorIdentity()
     {
         return ConnectorIdentity.forUser(user)
@@ -101,6 +109,7 @@ public class Identity
                 .withPrincipal(principal)
                 .withEnabledSystemRoles(enabledRoles)
                 .withExtraCredentials(extraCredentials)
+                .withUserAttributes(userAttributes)
                 .build();
     }
 
@@ -112,6 +121,7 @@ public class Identity
                 .withEnabledSystemRoles(enabledRoles)
                 .withConnectorRole(Optional.ofNullable(catalogRoles.get(catalog)))
                 .withExtraCredentials(extraCredentials)
+                .withUserAttributes(userAttributes)
                 .build();
     }
 
@@ -134,13 +144,14 @@ public class Identity
                Objects.equals(groups, identity.groups) &&
                Objects.equals(principal, identity.principal) &&
                Objects.equals(enabledRoles, identity.enabledRoles) &&
-               Objects.equals(catalogRoles, identity.catalogRoles);
+               Objects.equals(catalogRoles, identity.catalogRoles) &&
+               Objects.equals(userAttributes, identity.userAttributes);
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(user, groups, principal, enabledRoles, catalogRoles);
+        return Objects.hash(user, groups, principal, enabledRoles, catalogRoles, userAttributes);
     }
 
     @Override
@@ -168,6 +179,9 @@ public class Identity
         if (!extraCredentials.isEmpty()) {
             sb.append(", extraCredentials=").append(filteredCredentials);
         }
+        if (!userAttributes.isEmpty()) {
+            sb.append(", userAttributes=").append(userAttributes);
+        }
         sb.append('}');
         return sb.toString();
     }
@@ -189,7 +203,8 @@ public class Identity
                 .withPrincipal(identity.getPrincipal())
                 .withEnabledRoles(identity.enabledRoles)
                 .withConnectorRoles(identity.getCatalogRoles())
-                .withExtraCredentials(identity.getExtraCredentials());
+                .withExtraCredentials(identity.getExtraCredentials())
+                .withUserAttributes(identity.getUserAttributes());
     }
 
     public static class Builder
@@ -200,6 +215,7 @@ public class Identity
         private Set<String> enabledRoles = new HashSet<>();
         private Map<String, SelectedRole> connectorRoles = new HashMap<>();
         private Map<String, String> extraCredentials = new HashMap<>();
+        private Map<String, Object> userAttributes = new HashMap<>();
         private Optional<Runnable> onDestroy = Optional.empty();
 
         public Builder(String user)
@@ -291,6 +307,18 @@ public class Identity
             return this;
         }
 
+        public Builder withUserAttributes(Map<String, Object> userAttributes)
+        {
+            this.userAttributes = new HashMap<>(requireNonNull(userAttributes, "userAttributes is null"));
+            return this;
+        }
+
+        public Builder withAdditionalUserAttributes(Map<String, Object> userAttributes)
+        {
+            this.userAttributes.putAll(requireNonNull(userAttributes, "userAttributes is null"));
+            return this;
+        }
+
         public void withOnDestroy(Runnable onDestroy)
         {
             requireNonNull(onDestroy, "onDestroy is null");
@@ -314,7 +342,7 @@ public class Identity
 
         public Identity build()
         {
-            return new Identity(user, groups, principal, enabledRoles, connectorRoles, extraCredentials, onDestroy);
+            return new Identity(user, groups, principal, enabledRoles, connectorRoles, extraCredentials, userAttributes, onDestroy);
         }
     }
 

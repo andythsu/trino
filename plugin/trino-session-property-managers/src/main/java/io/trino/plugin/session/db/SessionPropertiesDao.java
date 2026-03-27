@@ -33,46 +33,10 @@ import static io.trino.plugin.session.db.util.SessionPropertiesDaoUtil.SESSION_S
  */
 public interface SessionPropertiesDao
 {
-    @SqlUpdate("CREATE TABLE IF NOT EXISTS " + SESSION_SPECS_TABLE + "(\n" +
-            "spec_id BIGINT NOT NULL AUTO_INCREMENT,\n" +
-            "user_regex VARCHAR(512),\n" +
-            "source_regex VARCHAR(512),\n" +
-            "query_type VARCHAR(512),\n" +
-            "group_regex VARCHAR(512),\n" +
-            "priority INT NOT NULL,\n" +
-            "PRIMARY KEY (spec_id)\n" +
-            ")")
-    void createSessionSpecsTable();
-
-    @SqlUpdate("CREATE TABLE IF NOT EXISTS " + CLIENT_TAGS_TABLE + "(\n" +
-            "tag_spec_id BIGINT NOT NULL,\n" +
-            "client_tag VARCHAR(512) NOT NULL,\n" +
-            "PRIMARY KEY (tag_spec_id, client_tag),\n" +
-            "FOREIGN KEY (tag_spec_id) REFERENCES session_specs (spec_id)\n" +
-            ")")
-    void createSessionClientTagsTable();
-
-    @SqlUpdate("CREATE TABLE IF NOT EXISTS " + PROPERTIES_TABLE + "(\n" +
-            "property_spec_id BIGINT NOT NULL,\n" +
-            "session_property_name VARCHAR(512),\n" +
-            "session_property_value VARCHAR(512),\n" +
-            "PRIMARY KEY (property_spec_id, session_property_name),\n" +
-            "FOREIGN KEY (property_spec_id) REFERENCES session_specs (spec_id)\n" +
-            ")")
-    void createSessionPropertiesTable();
-
-    @SqlUpdate("DROP TABLE IF EXISTS " + SESSION_SPECS_TABLE)
-    void dropSessionSpecsTable();
-
-    @SqlUpdate("DROP TABLE IF EXISTS " + CLIENT_TAGS_TABLE)
-    void dropSessionClientTagsTable();
-
-    @SqlUpdate("DROP TABLE IF EXISTS " + PROPERTIES_TABLE)
-    void dropSessionPropertiesTable();
-
     @SqlQuery("SELECT " +
             "S.spec_id,\n" +
             "S.user_regex,\n" +
+            "S.user_group_regex,\n" +
             "S.source_regex,\n" +
             "S.query_type,\n" +
             "S.group_regex,\n" +
@@ -81,26 +45,27 @@ public interface SessionPropertiesDao
             "GROUP_CONCAT(P.session_property_value ORDER BY P.session_property_name) session_property_values\n" +
             "FROM\n" +
             "(SELECT\n" +
-            "A.spec_id, A.user_regex, A.source_regex, A.query_type, A.group_regex, A.priority,\n" +
+            "A.spec_id, A.user_regex, A.user_group_regex, A.source_regex, A.query_type, A.group_regex, A.priority,\n" +
             "GROUP_CONCAT(DISTINCT B.client_tag) client_tags\n" +
             "FROM " + SESSION_SPECS_TABLE + " A\n" +
             "LEFT JOIN " + CLIENT_TAGS_TABLE + " B\n" +
             "ON A.spec_id = B.tag_spec_id\n" +
-            "GROUP BY A.spec_id, A.user_regex, A.source_regex, A.query_type, A.group_regex, A.priority)\n" +
+            "GROUP BY A.spec_id, A.user_regex, A.user_group_regex, A.source_regex, A.query_type, A.group_regex, A.priority)\n" +
             " S JOIN\n" +
             PROPERTIES_TABLE + " P\n" +
             "ON S.spec_id = P.property_spec_id\n" +
-            "GROUP BY S.spec_id, S.user_regex, S.source_regex, S.query_type, S.group_regex, S.priority, S.client_tags\n" +
+            "GROUP BY S.spec_id, S.user_regex, S.user_group_regex, S.source_regex, S.query_type, S.group_regex, S.priority, S.client_tags\n" +
             "ORDER BY S.priority asc")
     @UseRowMapper(SessionMatchSpec.Mapper.class)
     List<SessionMatchSpec> getSessionMatchSpecs();
 
     @VisibleForTesting
-    @SqlUpdate("INSERT INTO " + SESSION_SPECS_TABLE + " (spec_id, user_regex, source_regex, query_type, group_regex, priority)\n" +
-            "VALUES (:spec_id, :user_regex, :source_regex, :query_type, :group_regex, :priority)")
+    @SqlUpdate("INSERT INTO " + SESSION_SPECS_TABLE + " (spec_id, user_regex, user_group_regex, source_regex, query_type, group_regex, priority)\n" +
+            "VALUES (:spec_id, :user_regex, :user_group_regex, :source_regex, :query_type, :group_regex, :priority)")
     void insertSpecRow(
             @Bind("spec_id") long specId,
             @Bind("user_regex") String userRegex,
+            @Bind("user_group_regex") String userGroupRegex,
             @Bind("source_regex") String sourceRegex,
             @Bind("query_type") String queryType,
             @Bind("group_regex") String groupRegex,

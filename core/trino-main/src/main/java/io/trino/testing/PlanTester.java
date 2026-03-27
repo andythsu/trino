@@ -135,6 +135,7 @@ import io.trino.operator.table.ExcludeColumnsFunction;
 import io.trino.plugin.base.security.AllowAllSystemAccessControl;
 import io.trino.security.AllowAllAccessControl;
 import io.trino.security.GroupProviderManager;
+import io.trino.security.UserAttributeProviderManager;
 import io.trino.server.PluginManager;
 import io.trino.server.ServerConfig;
 import io.trino.server.SessionPropertyDefaults;
@@ -386,7 +387,8 @@ public class PlanTester
                 typeManager,
                 groupProvider,
                 blockEncodingSerde,
-                new LanguageFunctionEngineManager());
+                new LanguageFunctionEngineManager(),
+                new UserAttributeProviderManager());
         TableFunctionRegistry tableFunctionRegistry = new TableFunctionRegistry(createTableFunctionProvider(catalogManager));
         Metadata metadata = new MetadataManager(
                 new AllowAllAccessControl(),
@@ -470,7 +472,8 @@ public class PlanTester
                 tableFunctionRegistry,
                 tablePropertyManager,
                 analyzePropertyManager,
-                tableProceduresPropertyManager);
+                tableProceduresPropertyManager,
+                new UserAttributeProviderManager());
         this.statsCalculator = createNewStatsCalculator(plannerContext);
         this.scalarStatsCalculator = new ScalarStatsCalculator(plannerContext);
         this.taskCountEstimator = new TaskCountEstimator(() -> nodeCountForStats);
@@ -518,7 +521,8 @@ public class PlanTester
                 TESTING_BLOCK_ENCODING_MANAGER,
                 new HandleResolver(),
                 exchangeManagerRegistry,
-                spoolingManagerRegistry);
+                spoolingManagerRegistry,
+                new UserAttributeProviderManager());
 
         catalogManager.registerGlobalSystemConnector(globalSystemConnector);
         languageFunctionManager.setPlannerContext(plannerContext);

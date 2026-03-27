@@ -32,7 +32,8 @@ public abstract class AbstractTestSessionPropertyManager
             Optional.of("source"),
             ImmutableSet.of("tag1", "tag2"),
             Optional.of(QueryType.DATA_DEFINITION.toString()),
-            new ResourceGroupId(ImmutableList.of("global", "pipeline", "user_foo", "bar")));
+            new ResourceGroupId(ImmutableList.of("global", "pipeline", "user_foo", "bar")),
+            ImmutableSet.of("admin", "dev_l_3"));
 
     protected abstract void assertProperties(Map<String, String> systemProperties, Map<String, Map<String, String>> catalogProperties, SessionMatchSpec... spec)
             throws Exception;
@@ -44,6 +45,23 @@ public abstract class AbstractTestSessionPropertyManager
         Map<String, String> systemProperties = ImmutableMap.of("PROPERTY1", "VALUE1", "PROPERTY2", "VALUE2");
         SessionMatchSpec spec = new SessionMatchSpec(
                 Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.of(Pattern.compile("global.pipeline.user_.*")),
+                systemProperties);
+
+        assertProperties(systemProperties, ImmutableMap.of(), spec);
+    }
+
+    @Test
+    public void testUserGroupRegexMatch()
+            throws Exception
+    {
+        Map<String, String> systemProperties = ImmutableMap.of("PROPERTY", "VALUE");
+        SessionMatchSpec spec = new SessionMatchSpec(
+                Optional.empty(),
+                Optional.of(Pattern.compile("dev_l_[2-4]")),
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),

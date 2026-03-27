@@ -31,6 +31,7 @@ public class ConnectorIdentity
     private final Set<String> enabledSystemRoles;
     private final Optional<SelectedRole> connectorRole;
     private final Map<String, String> extraCredentials;
+    private final Map<String, Object> userAttributes;
 
     private ConnectorIdentity(
             String user,
@@ -38,7 +39,8 @@ public class ConnectorIdentity
             Optional<Principal> principal,
             Set<String> enabledSystemRoles,
             Optional<SelectedRole> connectorRole,
-            Map<String, String> extraCredentials)
+            Map<String, String> extraCredentials,
+            Map<String, Object> userAttributes)
     {
         this.user = requireNonNull(user, "user is null");
         this.groups = Set.copyOf(requireNonNull(groups, "groups is null"));
@@ -46,6 +48,7 @@ public class ConnectorIdentity
         this.enabledSystemRoles = Set.copyOf(requireNonNull(enabledSystemRoles, "enabledSystemRoles is null"));
         this.connectorRole = requireNonNull(connectorRole, "connectorRole is null");
         this.extraCredentials = Map.copyOf(requireNonNull(extraCredentials, "extraCredentials is null"));
+        this.userAttributes = Map.copyOf(requireNonNull(userAttributes, "userAttributes is null"));
     }
 
     public String getUser()
@@ -78,6 +81,11 @@ public class ConnectorIdentity
         return extraCredentials;
     }
 
+    public Map<String, Object> getUserAttributes()
+    {
+        return userAttributes;
+    }
+
     @Override
     public String toString()
     {
@@ -88,6 +96,7 @@ public class ConnectorIdentity
         sb.append(", enabledSystemroles=").append(enabledSystemRoles);
         connectorRole.ifPresent(role -> sb.append(", connectorRole=").append(role));
         sb.append(", extraCredentials=").append(extraCredentials.keySet());
+        sb.append(", userAttributes=").append(userAttributes);
         sb.append('}');
         return sb.toString();
     }
@@ -110,6 +119,7 @@ public class ConnectorIdentity
         private Set<String> enabledSystemRoles = new HashSet<>();
         private Optional<SelectedRole> connectorRole = Optional.empty();
         private Map<String, String> extraCredentials = new HashMap<>();
+        private Map<String, Object> userAttributes = new HashMap<>();
 
         private Builder(String user)
         {
@@ -156,9 +166,15 @@ public class ConnectorIdentity
             return this;
         }
 
+        public Builder withUserAttributes(Map<String, Object> userAttributes)
+        {
+            this.userAttributes = new HashMap<>(requireNonNull(userAttributes, "userAttributes is null"));
+            return this;
+        }
+
         public ConnectorIdentity build()
         {
-            return new ConnectorIdentity(user, groups, principal, enabledSystemRoles, connectorRole, extraCredentials);
+            return new ConnectorIdentity(user, groups, principal, enabledSystemRoles, connectorRole, extraCredentials, userAttributes);
         }
     }
 }
