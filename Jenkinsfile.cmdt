@@ -79,7 +79,7 @@ jaas.dockerAgent {
         """.stripIndent().replace("\n", " "))
 
     j.workflow("SimpleFlow")
-        .setReleaseBranch("475_blp")
+        .setReleaseBranch("480_blp")
         .infoUsing(infoMavenAgent)
         .testUsing(preTestAgent)
         .testUsingParallel([testBloombergModulesAgent, testTrinoMainAgent, testOpaPluginAgent])
