@@ -2291,7 +2291,12 @@
             <dependency>
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
-                <version>42.7.10</version>
+                <!-- Bloomberg customization: pinned to 42.7.4 due to regression in 42.7.5+
+                     where DatabaseMetaData.getTables() lowercases the table name pattern when
+                     storesLowerCaseIdentifiers()=true, breaking lookup of tables created with
+                     quoted mixed-case identifiers (e.g. CREATE TABLE "EnergyAssetsSubAssets").
+                     This breaks Trino's case-insensitive-name-matching feature. -->
+                <version>42.7.4</version>
             </dependency>
 
             <dependency>
