@@ -14,8 +14,9 @@
     <description>Trino - Old JDBC driver compatibility tests</description>
 
     <properties>
-        <!-- Version needs to be hardcoded for the release plugin to work. It will be updated by the release plugin. -->
-        <dep.presto-jdbc-under-test>480.0</dep.presto-jdbc-under-test>
+        <!-- Bloomberg customization: use project.version so versions:set auto-updates this property.
+             Upstream hardcodes the version for the release plugin, but Bloomberg uses Jaazy-Jeff with versions:set. -->
+        <dep.presto-jdbc-under-test>${project.version}</dep.presto-jdbc-under-test>
     </properties>
 
     <dependencies>
@@ -109,20 +110,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.basepom.maven</groupId>
-                <artifactId>duplicate-finder-maven-plugin</artifactId>
-                <configuration>
-                    <ignoredDependencies>
-                        <ignoredDependency>
-                            <!-- trino-jdbc is a shaded jar that bundles aircompressor native libs,
-                                 which conflict with the standalone aircompressor-v3 from trino-main -->
-                            <groupId>io.trino</groupId>
-                            <artifactId>trino-jdbc</artifactId>
-                        </ignoredDependency>
-                    </ignoredDependencies>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
