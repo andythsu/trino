@@ -5,13 +5,13 @@
     <parent>
         <groupId>io.trino</groupId>
         <artifactId>trino-root</artifactId>
-        <version>480.1</version>
+        <version>480.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <groupId>com.bloomberg.datalake.trino</groupId>
     <artifactId>bloomberg-root</artifactId>
-    <version>480.1</version>
+    <version>480.2</version>
     <packaging>pom</packaging>
 
     <description>Bloomberg modules for Trino</description>
