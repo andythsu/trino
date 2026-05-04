@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.bloomberg.datalake.trino</groupId>
         <artifactId>datalake-bas-reactor-bom</artifactId>
-        <version>480.2</version>
+        <version>480.3</version>
         <relativePath>../../lib/datalake-bas-reactor-bom/pom.xml</relativePath>
     </parent>
 
