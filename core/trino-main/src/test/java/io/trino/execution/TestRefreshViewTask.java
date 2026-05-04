@@ -42,6 +42,7 @@ import io.trino.sql.tree.NodeLocation;
 import io.trino.sql.tree.QualifiedName;
 import io.trino.sql.tree.RefreshView;
 import io.trino.testing.TestingGroupProvider;
+import io.trino.testing.TestingUserAttributeProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -311,6 +312,7 @@ final class TestRefreshViewTask
                 plannerContext,
                 accessControl,
                 new TestingGroupProvider(),
+                new TestingUserAttributeProvider(),
                 parser,
                 analyzerFactory)
                 .execute(statement, queryStateMachine, ImmutableList.of(), WarningCollector.NOOP);

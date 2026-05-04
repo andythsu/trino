@@ -13,6 +13,7 @@
  */
 package io.trino.filesystem.s3;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.trino.filesystem.Location;
 import io.trino.spi.security.AccessDeniedException;
@@ -502,6 +503,34 @@ public class TestS3SecurityMapping
                 .hasMessage("iamRole must be provided when roleSessionName is provided");
     }
 
+    @Test
+    public void testMappingPreservesUserAttributes()
+    {
+        S3SecurityMappingConfig mappingConfig = new S3SecurityMappingConfig()
+                .setConfigFile(getResourceFile("security-mapping.json"))
+                .setRoleCredentialName(IAM_ROLE_CREDENTIAL_NAME)
+                .setKmsKeyIdCredentialName(KMS_KEY_ID_CREDENTIAL_NAME)
+                .setSseCustomerKeyCredentialName(CUSTOMER_KEY_CREDENTIAL_NAME)
+                .setColonReplacement("#");
+
+        var provider = new S3SecurityMappingProvider(mappingConfig, new S3SecurityMappingsFileSource(mappingConfig));
+
+        Map<String, Object> userAttributes = ImmutableMap.of(
+                "department", ImmutableMap.of("name", "engineering"),
+                "product", ImmutableMap.of("subscription.tier", "premium"));
+
+        // verify userAttributes are carried through on the identity
+        MappingSelector selector = path("s3://foo/data/test.csv")
+                .withUserAttributes(userAttributes);
+
+        ConnectorIdentity identity = selector.identity();
+        assertThat(identity.getUserAttributes()).isEqualTo(userAttributes);
+
+        // verify mapping still works with userAttributes present
+        assertMapping(provider, selector, credentials("AKIAxxxaccess", "iXbXxxxsecret")
+                .withKmsKeyId("kmsKey_10"));
+    }
+
     private File getResourceFile(String name)
     {
         return new File(getResource(getClass(), name).getFile());
@@ -544,20 +573,22 @@ public class TestS3SecurityMapping
 
         public static MappingSelector path(String location)
         {
-            return new MappingSelector(DEFAULT_USER, ImmutableSet.of(), Location.of(location), Optional.empty(), Optional.empty(), Optional.empty());
+            return new MappingSelector(DEFAULT_USER, ImmutableSet.of(), ImmutableMap.of(), Location.of(location), Optional.empty(), Optional.empty(), Optional.empty());
         }
 
         private final String user;
         private final Set<String> groups;
+        private final Map<String, Object> userAttributes;
         private final Location location;
         private final Optional<String> extraCredentialIamRole;
         private final Optional<String> extraCredentialKmsKeyId;
         private final Optional<String> extraCredentialCustomerKey;
 
-        private MappingSelector(String user, Set<String> groups, Location location, Optional<String> extraCredentialIamRole, Optional<String> extraCredentialKmsKeyId, Optional<String> extraCredentialCustomerKey)
+        private MappingSelector(String user, Set<String> groups, Map<String, Object> userAttributes, Location location, Optional<String> extraCredentialIamRole, Optional<String> extraCredentialKmsKeyId, Optional<String> extraCredentialCustomerKey)
         {
             this.user = requireNonNull(user, "user is null");
             this.groups = ImmutableSet.copyOf(requireNonNull(groups, "groups is null"));
+            this.userAttributes = ImmutableMap.copyOf(requireNonNull(userAttributes, "userAttributes is null"));
             this.location = requireNonNull(location, "location is null");
             this.extraCredentialIamRole = requireNonNull(extraCredentialIamRole, "extraCredentialIamRole is null");
             this.extraCredentialKmsKeyId = requireNonNull(extraCredentialKmsKeyId, "extraCredentialKmsKeyId is null");
@@ -571,27 +602,32 @@ public class TestS3SecurityMapping
 
         public MappingSelector withExtraCredentialIamRole(String role)
         {
-            return new MappingSelector(user, groups, location, Optional.of(role), extraCredentialKmsKeyId, extraCredentialCustomerKey);
+            return new MappingSelector(user, groups, userAttributes, location, Optional.of(role), extraCredentialKmsKeyId, extraCredentialCustomerKey);
         }
 
         public MappingSelector withExtraCredentialKmsKeyId(String kmsKeyId)
         {
-            return new MappingSelector(user, groups, location, extraCredentialIamRole, Optional.of(kmsKeyId), Optional.empty());
+            return new MappingSelector(user, groups, userAttributes, location, extraCredentialIamRole, Optional.of(kmsKeyId), Optional.empty());
         }
 
         public MappingSelector withExtraCredentialCustomerKey(String customerKey)
         {
-            return new MappingSelector(user, groups, location, extraCredentialIamRole, Optional.empty(), Optional.of(customerKey));
+            return new MappingSelector(user, groups, userAttributes, location, extraCredentialIamRole, Optional.empty(), Optional.of(customerKey));
         }
 
         public MappingSelector withUser(String user)
         {
-            return new MappingSelector(user, groups, location, extraCredentialIamRole, extraCredentialKmsKeyId, extraCredentialCustomerKey);
+            return new MappingSelector(user, groups, userAttributes, location, extraCredentialIamRole, extraCredentialKmsKeyId, extraCredentialCustomerKey);
         }
 
         public MappingSelector withGroups(String... groups)
         {
-            return new MappingSelector(user, ImmutableSet.copyOf(groups), location, extraCredentialIamRole, extraCredentialKmsKeyId, extraCredentialCustomerKey);
+            return new MappingSelector(user, ImmutableSet.copyOf(groups), userAttributes, location, extraCredentialIamRole, extraCredentialKmsKeyId, extraCredentialCustomerKey);
+        }
+
+        public MappingSelector withUserAttributes(Map<String, Object> userAttributes)
+        {
+            return new MappingSelector(user, groups, userAttributes, location, extraCredentialIamRole, extraCredentialKmsKeyId, extraCredentialCustomerKey);
         }
 
         public ConnectorIdentity identity()
@@ -603,6 +639,7 @@ public class TestS3SecurityMapping
 
             return ConnectorIdentity.forUser(user)
                     .withGroups(groups)
+                    .withUserAttributes(userAttributes)
                     .withExtraCredentials(extraCredentials)
                     .build();
         }

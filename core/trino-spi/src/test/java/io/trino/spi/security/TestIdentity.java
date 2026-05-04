@@ -13,10 +13,12 @@
  */
 package io.trino.spi.security;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,6 +29,7 @@ class TestIdentity
             // part of identity:
             .withPrincipal(new BasicPrincipal("principal"))
             .withGroups(ImmutableSet.of("group1", "group2"))
+            .withUserAttributes(ImmutableMap.of("attr1", "value1", "attr2", ImmutableMap.of("nested", "value2")))
             .withEnabledRoles(ImmutableSet.of("role1", "role2"))
             .withConnectorRoles(ImmutableMap.of(
                     "connector1", new SelectedRole(SelectedRole.Type.ROLE, Optional.of("connector1role")),
@@ -67,6 +70,9 @@ class TestIdentity
                         "connector3", new SelectedRole(SelectedRole.Type.ROLE, Optional.of("connector3role"))))
                 .build())
                 .isNotEqualTo(TEST_IDENTITY);
+
+        assertThat(Identity.from(TEST_IDENTITY).withUserAttributes(ImmutableMap.of("attr3", "value3")).build())
+                .isNotEqualTo(TEST_IDENTITY);
     }
 
     @Test
@@ -79,5 +85,100 @@ class TestIdentity
 
         assertThat(otherIdentity.hashCode())
                 .isEqualTo(TEST_IDENTITY.hashCode());
+    }
+
+    @Test
+    public void testUserAttributesPreservedByFrom()
+    {
+        Map<String, Object> expectedAttributes = ImmutableMap.of("attr1", "value1", "attr2", ImmutableMap.of("nested", "value2"));
+
+        Identity copied = Identity.from(TEST_IDENTITY).build();
+        assertThat(copied.getUserAttributes()).isEqualTo(expectedAttributes);
+    }
+
+    @Test
+    public void testUserAttributesPreservedByToConnectorIdentity()
+    {
+        Map<String, Object> expectedAttributes = ImmutableMap.of("attr1", "value1", "attr2", ImmutableMap.of("nested", "value2"));
+
+        ConnectorIdentity connectorIdentity = TEST_IDENTITY.toConnectorIdentity();
+        assertThat(connectorIdentity.getUserAttributes()).isEqualTo(expectedAttributes);
+
+        ConnectorIdentity catalogConnectorIdentity = TEST_IDENTITY.toConnectorIdentity("connector1");
+        assertThat(catalogConnectorIdentity.getUserAttributes()).isEqualTo(expectedAttributes);
+    }
+
+    @Test
+    public void testAdditionalUserAttributes()
+    {
+        Identity identity = Identity.from(TEST_IDENTITY)
+                .withAdditionalUserAttributes(ImmutableMap.of("attr3", "value3"))
+                .build();
+
+        assertThat(identity.getUserAttributes()).isEqualTo(ImmutableMap.of(
+                "attr1", "value1",
+                "attr2", ImmutableMap.of("nested", "value2"),
+                "attr3", "value3"));
+    }
+
+    @Test
+    public void testEmptyUserAttributes()
+    {
+        Identity identity = Identity.forUser("user").build();
+        assertThat(identity.getUserAttributes()).isEmpty();
+
+        ConnectorIdentity connectorIdentity = identity.toConnectorIdentity();
+        assertThat(connectorIdentity.getUserAttributes()).isEmpty();
+    }
+
+    @Test
+    public void testNestedUserAttributes()
+    {
+        Map<String, Object> userAttributes = ImmutableMap.of(
+                "department", ImmutableMap.of(
+                        "name", "web development",
+                        "team", ImmutableList.of("frontend", "backend")),
+                "product", ImmutableMap.of(
+                        "primaryIdType", "SUBSCRIBER",
+                        "subscription.tier", "premium",
+                        "subscriptions", ImmutableList.of("analytics", "reporting", "alerts")),
+                "roles", ImmutableList.of("admin", "developer"));
+
+        Identity identity = Identity.forUser("user")
+                .withGroups(ImmutableSet.of("staff"))
+                .withUserAttributes(userAttributes)
+                .build();
+
+        // verify nested attributes are preserved
+        assertThat(identity.getUserAttributes()).isEqualTo(userAttributes);
+
+        // verify nested attributes survive Identity.from() copy
+        Identity copied = Identity.from(identity).build();
+        assertThat(copied.getUserAttributes()).isEqualTo(userAttributes);
+
+        // verify nested attributes survive toConnectorIdentity() conversion
+        ConnectorIdentity connectorIdentity = identity.toConnectorIdentity();
+        assertThat(connectorIdentity.getUserAttributes()).isEqualTo(userAttributes);
+
+        // verify withAdditionalUserAttributes merges with nested attributes
+        Identity merged = Identity.from(identity)
+                .withAdditionalUserAttributes(ImmutableMap.of(
+                        "region", ImmutableMap.of("primary", "US", "secondary", "EU")))
+                .build();
+        assertThat(merged.getUserAttributes()).containsEntry("department", ImmutableMap.of(
+                "name", "web development",
+                "team", ImmutableList.of("frontend", "backend")));
+        assertThat(merged.getUserAttributes()).containsEntry("region", ImmutableMap.of("primary", "US", "secondary", "EU"));
+        assertThat(merged.getUserAttributes()).hasSize(4);
+
+        // verify equality considers nested attributes
+        Identity different = Identity.forUser("user")
+                .withGroups(ImmutableSet.of("staff"))
+                .withUserAttributes(ImmutableMap.of(
+                        "department", ImmutableMap.of(
+                                "name", "web development",
+                                "team", ImmutableList.of("frontend"))))
+                .build();
+        assertThat(different).isNotEqualTo(identity);
     }
 }

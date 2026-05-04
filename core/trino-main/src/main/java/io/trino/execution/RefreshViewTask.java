@@ -26,6 +26,7 @@ import io.trino.security.AccessControl;
 import io.trino.security.ViewAccessControl;
 import io.trino.spi.security.GroupProvider;
 import io.trino.spi.security.Identity;
+import io.trino.spi.security.UserAttributeProvider;
 import io.trino.sql.PlannerContext;
 import io.trino.sql.analyzer.Analysis;
 import io.trino.sql.analyzer.AnalyzerFactory;
@@ -53,6 +54,7 @@ public class RefreshViewTask
     private final PlannerContext plannerContext;
     private final AccessControl accessControl;
     private final GroupProvider groupProvider;
+    private final UserAttributeProvider userAttributeProvider;
     private final SqlParser sqlParser;
     private final AnalyzerFactory analyzerFactory;
 
@@ -61,12 +63,14 @@ public class RefreshViewTask
             PlannerContext plannerContext,
             AccessControl accessControl,
             GroupProvider groupProvider,
+            UserAttributeProvider userAttributeProvider,
             SqlParser sqlParser,
             AnalyzerFactory analyzerFactory)
     {
         this.plannerContext = requireNonNull(plannerContext, "plannerContext is null");
         this.accessControl = requireNonNull(accessControl, "accessControl is null");
         this.groupProvider = requireNonNull(groupProvider, "groupProvider is null");
+        this.userAttributeProvider = requireNonNull(userAttributeProvider, "userAttributeProvider is null");
         this.sqlParser = requireNonNull(sqlParser, "sqlParser is null");
         this.analyzerFactory = requireNonNull(analyzerFactory, "analyzerFactory is null");
     }
@@ -101,6 +105,7 @@ public class RefreshViewTask
             Identity owner = viewDefinition.getRunAsIdentity().get();
             identity = Identity.from(owner)
                     .withGroups(groupProvider.getGroups(owner.getUser()))
+                    .withUserAttributes(userAttributeProvider.getUserAttributes(owner.getUser(), owner.getPrincipal()))
                     .build();
             // View owner does not need GRANT OPTION to grant access themselves
             if (!owner.getUser().equals(session.getIdentity().getUser())) {

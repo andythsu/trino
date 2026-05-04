@@ -106,10 +106,10 @@ public class Identity
     {
         return ConnectorIdentity.forUser(user)
                 .withGroups(groups)
+                .withUserAttributes(userAttributes)
                 .withPrincipal(principal)
                 .withEnabledSystemRoles(enabledRoles)
                 .withExtraCredentials(extraCredentials)
-                .withUserAttributes(userAttributes)
                 .build();
     }
 
@@ -117,11 +117,11 @@ public class Identity
     {
         return ConnectorIdentity.forUser(user)
                 .withGroups(groups)
+                .withUserAttributes(userAttributes)
                 .withPrincipal(principal)
                 .withEnabledSystemRoles(enabledRoles)
                 .withConnectorRole(Optional.ofNullable(catalogRoles.get(catalog)))
                 .withExtraCredentials(extraCredentials)
-                .withUserAttributes(userAttributes)
                 .build();
     }
 
@@ -200,11 +200,11 @@ public class Identity
     {
         return new Builder(identity.getUser())
                 .withGroups(identity.getGroups())
+                .withUserAttributes(identity.getUserAttributes())
                 .withPrincipal(identity.getPrincipal())
                 .withEnabledRoles(identity.enabledRoles)
                 .withConnectorRoles(identity.getCatalogRoles())
-                .withExtraCredentials(identity.getExtraCredentials())
-                .withUserAttributes(identity.getUserAttributes());
+                .withExtraCredentials(identity.getExtraCredentials());
     }
 
     public static class Builder

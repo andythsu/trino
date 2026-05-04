@@ -72,6 +72,7 @@ public class IcebergRestCatalogFileSystemFactory
             if (!extraCredentials.isEmpty()) {
                 ConnectorIdentity identityWithExtraCredentials = ConnectorIdentity.forUser(identity.getUser())
                         .withGroups(identity.getGroups())
+                        .withUserAttributes(identity.getUserAttributes())
                         .withPrincipal(identity.getPrincipal())
                         .withEnabledSystemRoles(identity.getEnabledSystemRoles())
                         .withConnectorRole(identity.getConnectorRole())

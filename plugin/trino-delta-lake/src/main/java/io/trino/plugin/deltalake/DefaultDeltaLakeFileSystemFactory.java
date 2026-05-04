@@ -50,6 +50,7 @@ public class DefaultDeltaLakeFileSystemFactory
             // Do not include original credentials as they should not be used in vended mode
             ConnectorIdentity identityWithExtraCredentials = ConnectorIdentity.forUser(identity.getUser())
                     .withGroups(identity.getGroups())
+                    .withUserAttributes(identity.getUserAttributes())
                     .withPrincipal(identity.getPrincipal())
                     .withEnabledSystemRoles(identity.getEnabledSystemRoles())
                     .withConnectorRole(identity.getConnectorRole())

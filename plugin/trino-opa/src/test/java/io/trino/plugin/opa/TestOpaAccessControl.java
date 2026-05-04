@@ -225,6 +225,11 @@ final class TestOpaAccessControl
     {
         Identity dummyIdentity = Identity.forUser("dummy-user")
                 .withGroups(ImmutableSet.of("some-group"))
+                .withUserAttributes(ImmutableMap.of(
+                        "department", ImmutableMap.of(
+                                "name", "engineering",
+                                "team", ImmutableList.of("frontend", "backend")),
+                        "subscription", "premium"))
                 .build();
         ThrowingMethodWrapper wrappedMethod = new ThrowingMethodWrapper(
                 accessControl -> callable.accept(accessControl, TEST_IDENTITY, dummyIdentity));
@@ -237,7 +242,13 @@ final class TestOpaAccessControl
                         "user": {
                             "user": "dummy-user",
                             "groups": ["some-group"],
-                            "userAttributes": {}
+                            "userAttributes": {
+                                "department": {
+                                    "name": "engineering",
+                                    "team": ["frontend", "backend"]
+                                },
+                                "subscription": "premium"
+                            }
                         }
                     }
                 }
@@ -670,7 +681,11 @@ final class TestOpaAccessControl
                 accessControlContext);
         Identity sampleIdentityWithGroups = Identity.forUser("test_user")
                 .withGroups(ImmutableSet.of("some_group"))
-                .withUserAttributes(ImmutableMap.of("some-attr1", ImmutableSet.of("val11", "val12"),"some-attr2", "val2"))
+                .withUserAttributes(ImmutableMap.of(
+                        "department", ImmutableMap.of(
+                                "name", "engineering",
+                                "team", ImmutableList.of("frontend", "backend")),
+                        "subscription", "premium"))
                 .build();
 
         authorizer.checkCanExecuteQuery(sampleIdentityWithGroups, TEST_QUERY_ID);
@@ -686,8 +701,11 @@ final class TestOpaAccessControl
                             "user": "test_user",
                             "groups": ["some_group"],
                             "userAttributes": {
-                                "some-attr1": ["val11", "val12"],
-                                "some-attr2": "val2"
+                                "department": {
+                                    "name": "engineering",
+                                    "team": ["frontend", "backend"]
+                                },
+                                "subscription": "premium"
                             }
                         },
                         "softwareStack": {

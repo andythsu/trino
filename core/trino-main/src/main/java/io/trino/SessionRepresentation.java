@@ -365,6 +365,7 @@ public final class SessionRepresentation
     {
         return Identity.forUser(user)
                 .withGroups(groups)
+                .withUserAttributes(userAttributes)
                 .withPrincipal(principal.map(BasicPrincipal::new))
                 .withEnabledRoles(enabledRoles)
                 .withConnectorRoles(catalogRoles)
@@ -376,6 +377,7 @@ public final class SessionRepresentation
     {
         return Identity.forUser(originalUser)
                 .withGroups(originalUserGroups)
+                .withUserAttributes(originalUserAttributes)
                 .withPrincipal(principal.map(BasicPrincipal::new))
                 .withEnabledRoles(originalRoles)
                 .withExtraCredentials(extraCredentials)

@@ -14,6 +14,8 @@
 package io.trino;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import io.trino.spi.QueryId;
 import io.trino.spi.security.Identity;
 import io.trino.spi.type.TimeZoneKey;
@@ -116,5 +118,49 @@ public class TestSession
         assertThat(viewSession.getClientInfo()).isEqualTo(clientInfo);
         assertThat(viewSession.getTraceToken()).isEqualTo(traceToken);
         assertThat(viewSession.getStart()).isEqualTo(start);
+    }
+
+    @Test
+    public void testSessionRepresentationPreservesUserAttributes()
+    {
+        Map<String, Object> userAttributes = ImmutableMap.of(
+                "department", ImmutableMap.of(
+                        "name", "engineering",
+                        "team", ImmutableList.of("frontend", "backend")),
+                "product", ImmutableMap.of("primaryIdType", "SUBSCRIBER", "subscription.tier", "premium"));
+        Map<String, Object> originalUserAttributes = ImmutableMap.of(
+                "original-attr", "original-value");
+        Map<String, String> extraCredentials = ImmutableMap.of("cred1", "secret1");
+
+        Identity identity = Identity.forUser("test_user")
+                .withGroups(ImmutableSet.of("group1"))
+                .withUserAttributes(userAttributes)
+                .build();
+        Identity originalIdentity = Identity.forUser("original_user")
+                .withGroups(ImmutableSet.of("original_group"))
+                .withUserAttributes(originalUserAttributes)
+                .build();
+
+        Session session = testSessionBuilder()
+                .setIdentity(identity)
+                .setOriginalIdentity(originalIdentity)
+                .build();
+
+        SessionRepresentation representation = session.toSessionRepresentation();
+
+        Identity reconstructedIdentity = representation.toIdentity(extraCredentials);
+        assertThat(reconstructedIdentity.getUserAttributes()).isEqualTo(userAttributes);
+        assertThat(reconstructedIdentity.getGroups()).isEqualTo(ImmutableSet.of("group1"));
+        assertThat(reconstructedIdentity.getExtraCredentials()).isEqualTo(extraCredentials);
+
+        Identity reconstructedOriginal = representation.toOriginalIdentity(extraCredentials);
+        assertThat(reconstructedOriginal.getUserAttributes()).isEqualTo(originalUserAttributes);
+        assertThat(reconstructedOriginal.getGroups()).isEqualTo(ImmutableSet.of("original_group"));
+
+        // Verify empty userAttributes also round-trip correctly
+        Identity minimalIdentity = Identity.forUser("minimal_user").build();
+        Session minimalSession = testSessionBuilder().setIdentity(minimalIdentity).build();
+        Identity reconstructedMinimal = minimalSession.toSessionRepresentation().toIdentity(ImmutableMap.of());
+        assertThat(reconstructedMinimal.getUserAttributes()).isEmpty();
     }
 }
