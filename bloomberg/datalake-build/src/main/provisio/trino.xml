@@ -356,4 +356,10 @@
             <unpack />
         </artifact>
     </artifactSet>
+
+    <artifactSet to="plugin/trino-spooling-filesystem">
+        <artifact id="io.trino:trino-spooling-filesystem:zip:${project.version}">
+            <unpack />
+        </artifact>
+    </artifactSet>
 </runtime>
