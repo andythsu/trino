@@ -386,6 +386,12 @@
             <artifactId>cdb2jdbc</artifactId>
             <version>${dep.comdb2.cdb2jdbc.version}</version>
             <scope>runtime</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

@@ -206,6 +206,7 @@
         <dep.jts.version>1.20.0</dep.jts.version>
         <dep.okhttp.version>5.3.2</dep.okhttp.version>
         <dep.okio.version>3.17.0</dep.okio.version>
+        <dep.grpc.version>1.79.0</dep.grpc.version>
         <dep.netty.version>4.2.10.Final</dep.netty.version>
         <dep.parquet.version>1.17.0</dep.parquet.version>
         <dep.protobuf.version>4.34.1</dep.protobuf.version>
@@ -216,7 +217,7 @@
         <dep.zookeeper.version>3.9.5</dep.zookeeper.version>
         <!-- Bloomberg customization: Bloomberg-specific dependency versions -->
         <dep.auth0.version>4.5.0</dep.auth0.version>
-        <dep.comdb2.cdb2jdbc.version>3.1.8</dep.comdb2.cdb2jdbc.version>
+        <dep.comdb2.cdb2jdbc.version>4.3.1.19</dep.comdb2.cdb2jdbc.version>
         <dep.flyway.version>11.7.2</dep.flyway.version>
         <extraJavaVectorArgs>--add-modules=jdk.incubator.vector</extraJavaVectorArgs>
         <!--
@@ -788,6 +789,115 @@
                 <groupId>io.github.jeschkies</groupId>
                 <artifactId>loki-client</artifactId>
                 <version>0.0.5</version>
+            </dependency>
+
+            <!-- Override grpc versions from libraries-bom (1.76.3) to satisfy SPIFFE (1.79.0) in cdb2jdbc -->
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-alts</artifactId>
+                <version>${dep.grpc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-api</artifactId>
+                <version>${dep.grpc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-auth</artifactId>
+                <version>${dep.grpc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-context</artifactId>
+                <version>${dep.grpc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-core</artifactId>
+                <version>${dep.grpc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-googleapis</artifactId>
+                <version>${dep.grpc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-grpclb</artifactId>
+                <version>${dep.grpc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-inprocess</artifactId>
+                <version>${dep.grpc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-netty</artifactId>
+                <version>${dep.grpc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-netty-shaded</artifactId>
+                <version>${dep.grpc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-opentelemetry</artifactId>
+                <version>${dep.grpc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-protobuf</artifactId>
+                <version>${dep.grpc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-protobuf-lite</artifactId>
+                <version>${dep.grpc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-rls</artifactId>
+                <version>${dep.grpc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-services</artifactId>
+                <version>${dep.grpc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-stub</artifactId>
+                <version>${dep.grpc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-util</artifactId>
+                <version>${dep.grpc.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-xds</artifactId>
+                <version>${dep.grpc.version}</version>
             </dependency>
 
             <dependency>
@@ -2219,6 +2329,13 @@
                 <groupId>org.checkerframework</groupId>
                 <artifactId>checker-qual</artifactId>
                 <version>3.54.0</version>
+            </dependency>
+
+            <dependency>
+                <!-- Required by grpc-api 1.79.0; libraries-bom pins 1.24 -->
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>animal-sniffer-annotations</artifactId>
+                <version>1.26</version>
             </dependency>
 
             <dependency>
