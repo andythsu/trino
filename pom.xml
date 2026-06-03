@@ -10,7 +10,7 @@
 
     <groupId>io.trino</groupId>
     <artifactId>trino-root</artifactId>
-    <version>480.4</version>
+    <version>480.5</version>
     <packaging>pom</packaging>
 
     <name>${project.artifactId}</name>
@@ -152,7 +152,7 @@
     <properties>
         <project.build.targetJdk>25</project.build.targetJdk>
         <!-- for reproducible build support, updated by release plugin -->
-        <project.build.outputTimestamp>2026-05-27T20:18:43Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2026-06-03T20:56:05Z</project.build.outputTimestamp>
         <!-- TODO remove this property when no module overrides it -->
         <trino.error-prone.guarded-by>ERROR</trino.error-prone.guarded-by>
 
