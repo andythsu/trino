@@ -19,7 +19,9 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSelector;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import io.airlift.log.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
@@ -27,6 +29,8 @@ import static java.util.Objects.requireNonNull;
 public class NimbusMultiJWKSource
         <C extends SecurityContext> implements JWKSource<C>
 {
+    private static final Logger log = Logger.get(NimbusMultiJWKSource.class);
+
     private final List<JWKSource<C>> jwkSources;
 
     public NimbusMultiJWKSource(List<JWKSource<C>> jwkSources)
@@ -39,8 +43,20 @@ public class NimbusMultiJWKSource
             throws KeySourceException
     {
         ImmutableList.Builder<JWK> jwks = ImmutableList.builder();
+        List<KeySourceException> failures = new ArrayList<>();
         for (var jwkSource : jwkSources) {
-            jwks.addAll(jwkSource.get(jwkSelector, context));
+            try {
+                jwks.addAll(jwkSource.get(jwkSelector, context));
+            }
+            catch (KeySourceException e) {
+                log.warn("Failed to retrieve JWK keys from source, trying remaining sources: %s", e.getMessage());
+                failures.add(e);
+            }
+        }
+        if (failures.size() == jwkSources.size()) {
+            KeySourceException combined = new KeySourceException("All JWK sources failed");
+            failures.forEach(combined::addSuppressed);
+            throw combined;
         }
         return jwks.build();
     }
