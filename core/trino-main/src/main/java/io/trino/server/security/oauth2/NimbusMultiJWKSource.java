@@ -21,7 +21,6 @@ import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import io.airlift.log.Logger;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
@@ -43,19 +42,21 @@ public class NimbusMultiJWKSource
             throws KeySourceException
     {
         ImmutableList.Builder<JWK> jwks = ImmutableList.builder();
-        List<KeySourceException> failures = new ArrayList<>();
+        ImmutableList.Builder<KeySourceException> failures = ImmutableList.builder();
+        int failureCount = 0;
         for (var jwkSource : jwkSources) {
             try {
                 jwks.addAll(jwkSource.get(jwkSelector, context));
             }
             catch (KeySourceException e) {
-                log.warn("Failed to retrieve JWK keys from source, trying remaining sources: %s", e.getMessage());
+                log.warn(e, "Failed to retrieve JWK keys from source, trying remaining sources");
                 failures.add(e);
+                failureCount++;
             }
         }
-        if (failures.size() == jwkSources.size()) {
+        if (failureCount == jwkSources.size()) {
             KeySourceException combined = new KeySourceException("All JWK sources failed");
-            failures.forEach(combined::addSuppressed);
+            failures.build().forEach(combined::addSuppressed);
             throw combined;
         }
         return jwks.build();
